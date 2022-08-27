@@ -1,0 +1,82 @@
+
+
+Creating a Library Module / Crate 
+  https://www.tutorialspoint.com/rust/rust_modules.htm
+  https://doc.rust-lang.org/rust-by-example/mod/visibility.html
+
+Hash Map
+  Hash map docs with examples https://doc.rust-lang.org/std/collections/struct.HashMap.html
+
+Rust arrays
+   https://www.tutorialjinni.com/arrays-in-rust.html
+   Array, Vector, Slices and slices of vector
+   https://www.cs.brandeis.edu/~cs146a/rust/doc-02-21-2015/book/arrays-vectors-and-slices.html
+   https://doc.rust-lang.org/rust-by-example/primitives/array.html
+
+
+Rust Vectors
+  includes creation and sorting but only hard coded 
+    https://rust-lang-nursery.github.io/rust-cookbook/algorithms/sorting.html
+  Dynamic arrays in rust create, add, sort, iterate
+    https://www.tutorialjinni.com/rust-dynamic-array-vectors.html
+
+
+References and Borrowing
+   Pay attention to rules of only one mutable borrow at a time 
+   https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html#references-and-borrowing
+
+
+The Go Developer's Quickstart Guide to Rust
+   includes examples of using rust time rust time modules 
+   https://dzone.com/articles/the-go-developers-quickstart-guide-to-rust
+
+Building a Async CSV parser in Rust
+    Good example of rust async usage
+    https://dfrasca.hashnode.dev/rust-building-an-async-csv-parser
+
+Rust Built in CSV parser
+  https://rust-lang-nursery.github.io/rust-cookbook/encoding/csv.html
+
+
+
+-------------------------
+---  STATS & Regression
+-------------------------
+Rust binding for GNU Numeric Library including Linear Regression
+ - https://docs.rs/GSL/0.4.28/rgsl/index.html
+   Linear Regression functions in GSL
+      https://docs.rs/GSL/0.4.28/rgsl/fit/index.html
+   multi-fit polynomial regression 
+      https://docs.rs/GSL/0.4.28/rgsl/types/multifit_solver/index.html
+
+
+Rust Statistics method includes std deviation simple linear regression
+  in a built in library 
+  https://rust-lang-nursery.github.io/rust-cookbook/science/mathematics/statistics.html
+  https://docs.rs/statistical/latest/statistical/
+
+
+Rust Linear Regression module with simple and multi pass
+  includes good examples of calling the system vectored 
+  numbers.  Best place to start.  
+  https://docs.rs/linreg/latest/linreg/
+  https://docs.rs/linreg/latest/linreg/fn.linear_regression.html
+
+Rust Linear Regression with error fit - This one seems like just 
+  what I need to test my pricePred Ideas - 
+  https://docs.rs/linregress/latest/linregress/ 
+  
+Rust Machine Learning with Linear Regression - 
+  https://levelup.gitconnected.com/machine-learning-and-rust-part-2-linear-regression-d3b820ed28f9
+
+
+Rust based Plot library for graphic scatter graphic
+  https://docs.rs/plotlib/0.3.0/plotlib/
+
+Simple Linear Regression from scratch in Rust
+  https://cheesyprogrammer.com/2018/12/13/simple-linear-regression-from-scratch-in-rust/
+
+Example of implementation of sum of square errors from mean
+   https://exercism.org/tracks/rust/exercises/difference-of-squares/solutions/b06165a826f0467a899bea9d59c06304
+
+

@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://finance.yahoo.com/quote/SPY/history?p=SPY
+HostUrl=https://query1.finance.yahoo.com/v7/finance/download/SPY?period1=728265600&period2=1661472000&interval=1d&events=history&includeAdjustedClose=true
