@@ -30,7 +30,7 @@ fn reg_line_fit_err(darr : &[f32], offset : f32, slope_rat :f32) -> f32 {
     return err_sum / (nele as f32); 
 }
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct BestNumDayFit {
     pub sloper : f32,
     pub num_ele: i32,
@@ -45,37 +45,34 @@ fn find_best_fit_in_range(pbars : bars::Bars, end_ndx : usize, min_len : i32, ma
     // Start at a current day then work backwards to find the trend length
     // between min,max days that yields the lowest error.
     let mut best : BestNumDayFit = BestNumDayFit {sloper: 0.0, 
-           num_ele : min_len, 
+           num_ele : -1, 
            err : 99999999.99, 
            offset : 0.0 };
    
     for num_day in min_len .. max_len {
-        println!("numDay={0:#?} min_len={1:#?} max_len={2:#?}", num_day, min_len, max_len);
+        //println!("numDay={0:#?} min_len={1:#?} max_len={2:#?}", num_day, min_len, max_len);
         let beg_ndx = end_ndx - (num_day as usize);
         let dayns = pbars.slice_dayn(0, num_day as usize);
         let closes= pbars.slice_close(beg_ndx, end_ndx);
         let beg_ndx_val = pbars.close[beg_ndx];
-        best.num_ele = num_day;
         //println!("dayns={0:#?} closes={1:#?} beg_ndx_val={2:#?} ", dayns, closes, beg_ndx_val); 
         let tpl1 : (f32, f32) = linear_regression(dayns, closes).unwrap_or((0.0,-0.001));
         //println!("numDay={0:#?},tpl1={01:#?}", num_day, tpl1);
-  
         let (slope, offset) = tpl1;
         let slope_rat = slope / beg_ndx_val;
-        println!("slope={0:#?}, offset={1:#?}, slope_ratio={2:#?}", slope, offset, slope_rat);
+        //println!("slope={0:#?}, offset={1:#?}, slope_ratio={2:#?}", slope, offset, slope_rat);
         let days_offset = 350;
         let fit_err = reg_line_fit_err(closes, beg_ndx_val, slope_rat);
-        println!("fit_err={0:#?} best.err={1:#?} nday={2:#?}", fit_err, best.err, num_day);
+        //println!("fit_err={0:#?} best.err={1:#?} nday={2:#?}", fit_err, best.err, num_day);
         if fit_err < best.err {
             best.err = fit_err;
             best.num_ele = num_day;
             best.sloper = slope_rat;
             best.offset = offset;
-            println!("best_fit{0:#?}", best)
+            println!("SET best_fit{0:#?}", best)
             //println!("new best num_day={0:#?} err={1:#?} slope={2:#?} offset={3:#?}",
             //    num_day, best.err, best.sloper, best.offset)
         }
-        println!("best_fit_num_day={0:#?}", best.num_ele)
     }
     return best;
 }
@@ -102,8 +99,8 @@ fn main() {
     let slope_rat = slope / offset;
     println!("slope={0:#?}, offset={1:#?}, slope_ratio={2:#?}", slope, offset, slope_rat);
 
-    let bfl = find_best_fit_in_range(pbars, 500, 7,  180); 
-    println!("bfl={0:#?}", bfl);
+    let bfl = find_best_fit_in_range(pbars, 500, 7,  30); 
+    println!("from best fit function bfl={0:#?}", bfl);
     
     
     
