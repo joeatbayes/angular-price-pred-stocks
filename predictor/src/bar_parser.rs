@@ -19,20 +19,20 @@ pub mod bar_parser {
   
     #[derive(Debug)]
     pub struct Bars { 
-        dayn : Vec<f32>,
-        date : Vec<String>,
-        open : Vec<f32>,
-        high : Vec<f32>,
-        low  : Vec<f32>,
-        close : Vec<f32>,
-        adj_close: Vec<f32>,
-        vol  : Vec<i64>
+        pub dayn : Vec<f32>,
+        pub date : Vec<String>,
+        pub open : Vec<f32>,
+        pub high : Vec<f32>,
+        pub low  : Vec<f32>,
+        pub close : Vec<f32>,
+        pub adj_close: Vec<f32>,
+        pub vol  : Vec<i64>
     }
 
     impl Bars {
         pub fn new() -> Bars {
             Bars {
-               dayn: Vec::new(),
+               dayn: Vec::with_capacity(5000),
                date: Vec::new(),
                open: Vec::new(),
                high: Vec::new(),

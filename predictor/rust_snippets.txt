@@ -1,0 +1,24 @@
+  // most simple linear regression check
+    //let xs: Vec<f64> = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+    //let ys: Vec<f64> = vec![2.0, 4.0, 5.0, 4.0, 5.0];
+    //assert_eq!(Ok((0.6, 2.2)), linear_regression(&xs, &ys));
+   
+    // sample of creating Tuble from tuple
+    //let x: (f32, f32) = (12.0,18.0);
+    //let x: (f32, f32)  = linear_regression(dayns, closes).unwrap(); 
+    //let  y: Result((f32, f32)) = linear_regression(dayns, closes);  
+
+
+
+
+// Example of unpacking a tuple wrapped in OK from linear_regression frame.
+     let tpl : (f32, f32) = match linear_regression(dayns, closes) {    
+       Ok(tpl) => { println!("val={0:#?}", tpl);
+                    tpl 
+                  },
+        _ => {  println!("not ok"); 
+                (0.0,-0.001)
+             }
+     };
+
+
