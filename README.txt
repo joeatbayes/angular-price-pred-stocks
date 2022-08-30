@@ -1,13 +1,11 @@
 Stock Price Prediction using angular velocity changes in rust
 By Joseph Ellsworth 2022-08-22
 
-In my work with stocks estimating prices I have seen that pivotal buying 
-or selling opportunities occur after two actions.  For example stock prices 
-drop for 3 weeks then stabilize for 1 week.  At these pivotal end points 
-prices tend to either resume their longer trend or continue a reversal.
-This work is an attempt to develop a classifier which can learn the best
-length of time to use when finding similar pairs of movements from the 
-past.  
+In my work with stocks attempting to predict future price movements
+I have seen that pivotal buying or selling opportunities occur after
+two actions.  For example stock prices drop for 3 weeks then stabilize
+for 1 week.  At these pivotal end points prices tend to either resume 
+their longer trend or continue a reversal.
 
 The theory is that certain patterns of these paired movements will result 
 in predictable future price movements.  For example if stock prices drop for
@@ -16,8 +14,9 @@ next 10 days will tend to move upward but if prices drop for 3 months and
 stabilize for 1 week they are more likely to resume a downward movement. 
 
 This application seeks to validate this theory by finding a set
-of optimal time frames to analyze and then using geometric similarity,
-linear regression,  K Nearest Neighbor and Bayesian math to determine 
+of optimal time frames to analyze and then using geometric similarity
+to predict future price movements.  It uses linear regression,  
+K Nearest Neighbor and Bayesian math to determine 
 similarity and project the future price movement of current data based 
 on the past movement of prices with similar geometric properties.  If the
 theory proves valid then we should be able to predict directional movement 
@@ -38,8 +37,10 @@ Key Repository Files:
 
 •   K Nearest Neighbor Matching 
         
+
 •   Optimizer seeking to find best look forward and minimum short trend line
     lengths.
+
 
 •  Sample from the Initial Linear Regression slope fitting for SPY
 
@@ -90,6 +91,8 @@ angle from the two slopes). This yields 4 data points:
    Short line Length,  
    Angle of velocity change between short line and long line.  
 
+   SEE: predictor/src/reg_fit.rs  struct BestNumDayFit and BNDPair
+
 NOTE:  We could potentially skip the linear regression and simply
   describe a line as the slope between two bars and then use the 
   same error function to measure how the other data points
@@ -111,6 +114,16 @@ To compute the similarity of any single line we can use a formula such as:
     LengthDelta = (line Length - compare Line Length)
     similarityScore = slopeDelta / LengthDelta
 
+    SEE: predictor/src/reg_fit.rs method find_best_fit_in_range
+
+    A a more recent short trend line is combined with a longer 
+    trend line to describe the pair which I saw in the stock analysis
+    as A long term trend + a shorter term different movement which I 
+    think represent a indicator to predict future prices. 
+    
+    SEE: predictor/src/reg_fit.rs methodbest_fit_angle
+         predictor/src/reg_fit.rs method best-build_fit_angles
+
 This is intended to allow the slope to be the main driver of similarity but 
 if the lines are radically different lengths reduce the effect similarity.    
 When comparing two tuple scores we can use a formula such as
@@ -120,7 +133,10 @@ When comparing two tuple scores we can use a formula such as
      velChgAngle2 = compareTuple.line2.slope - compareTuple.line1.slope
      velDelt = 1 / (VelChgAngle1 - velChgAngle2)
      netSim = ( sim1 + sim2)  / velDelt
-      
+
+    SEE: predictor/src/reg_fit.sr methods sim_score
+
+
 Note: To allow for large price changes we must compute a price movement range from
   min,max prices and compute slope as a fraction of that rather than a pure multiplier. 
   Otherwise for large price movements we could get values for velDelta greater than 0.    
@@ -130,6 +146,10 @@ Note: To allow for large price changes we must compute a price movement range fr
   If we average those price movements together we theoretically can use that data to 
   project a probable price movement for the same time frame from the current bar.  
 
+
+-------------------------
+-- Similarity Clustering
+-------------------------
 We will use a KNN similarityScore cluster where we use the similarity in slope, line length
   and angles to find the most similar data points.  We can use the the look at their future
   look at price movements combined with Bayesian math to compute the probability of a current
@@ -150,6 +170,10 @@ We will use a KNN similarityScore cluster where we use the similarity in slope, 
   too much lower than the highest similarity.    The projected look forward change is combined with
   Bayesian inspired math to determine probability of a move upward.
 
+
+---------------------------------
+-- Combining multiple time frames 
+----------------------------------
   Note:  To maximize potential precision while dropping recall we may use multiple time frames such as
   a short time from from 15 to 30 days and a second short time frame from 30 to 60 days.  If the 
   theory holds true then confirming the movement of a short term trend with the a long term trend 
