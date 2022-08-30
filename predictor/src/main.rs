@@ -35,22 +35,48 @@ pub struct BestNumDayFit {
     pub sloper : f32,
     pub num_ele: i32,
     pub err : f32,
-    pub offset : f32
+    pub offset : f32,
+    pub end_ndx : i32,
+    pub slope : f32
 }
+
+#[derive(Debug,Copy,Clone)]
+pub struct BNDPair {
+   pub long_line : BestNumDayFit,
+   pub short_line : BestNumDayFit,
+   pub angle : f32,
+   pub fp_dif_rat : f32
+}
+
+impl BestNumDayFit {
+  pub fn sim_score(&self, cmp : BestNumDayFit) -> f32 {
+    let ssim = 1000.0 - (self.sloper - cmp.sloper);
+    let num_ele_dif = (self.num_ele - cmp.num_ele).abs();
+    let num_ele_rat = num_ele_dif as f32 / self.num_ele as f32;
+    let num_ele_score = 1.0 - num_ele_rat;
+    return ssim * num_ele_score // reduce angle score so larger # of ele difference reduces score even more  }
+  }
+}
+
 
 //TODO:  Use enum parameter to select the data open,low,high,low,close
 //TODO:  use a getSlice which implements the enum logic so we don't spread it around.
 //
-fn find_best_fit_in_range(pbars : bars::Bars, end_ndx : usize, min_len : i32, max_len : i32) -> BestNumDayFit {
+fn find_best_fit_in_range(pbars : &bars::Bars, end_ndx : usize, min_len : i32, max_lenp : i32) -> BestNumDayFit {
     // Start at a current day then work backwards to find the trend length
     // between min,max days that yields the lowest error.
+    let num_ele = pbars.len();
+    let max_len :i32 = max_lenp.min((num_ele as i32)-1).min(end_ndx as i32);
+    //println!("max_lenp={0:#?} max_len={1:#?}", max_len, max_lenp);
     let mut best : BestNumDayFit = BestNumDayFit {sloper: 0.0, 
            num_ele : -1, 
            err : 99999999.99, 
-           offset : 0.0 };
+           offset : 0.0,
+           end_ndx: (end_ndx as i32),
+           slope : 0.0};
    
     for num_day in min_len .. max_len {
-        //println!("numDay={0:#?} min_len={1:#?} max_len={2:#?}", num_day, min_len, max_len);
+        //println!("num_ele={4:#?} numDay={0:#?} min_len={1:#?} max_len={2:#?} end_ndx={3:#?}", num_day, min_len, max_len,  end_ndx, num_ele);
         let beg_ndx = end_ndx - (num_day as usize);
         let dayns = pbars.slice_dayn(0, num_day as usize);
         let closes= pbars.slice_close(beg_ndx, end_ndx);
@@ -62,6 +88,7 @@ fn find_best_fit_in_range(pbars : bars::Bars, end_ndx : usize, min_len : i32, ma
         let slope_rat = slope / beg_ndx_val;
         //println!("slope={0:#?}, offset={1:#?}, slope_ratio={2:#?}", slope, offset, slope_rat);
         let days_offset = 350;
+
         let fit_err = reg_line_fit_err(closes, beg_ndx_val, slope_rat);
         //println!("fit_err={0:#?} best.err={1:#?} nday={2:#?}", fit_err, best.err, num_day);
         if fit_err < best.err {
@@ -69,7 +96,8 @@ fn find_best_fit_in_range(pbars : bars::Bars, end_ndx : usize, min_len : i32, ma
             best.num_ele = num_day;
             best.sloper = slope_rat;
             best.offset = offset;
-            println!("SET best_fit{0:#?}", best)
+            best.slope = slope;
+            //println!("SET best_fit{0:#?}", best)
             //println!("new best num_day={0:#?} err={1:#?} slope={2:#?} offset={3:#?}",
             //    num_day, best.err, best.sloper, best.offset)
         }
@@ -98,12 +126,98 @@ fn main() {
     let (slope, offset) = tpl1;
     let slope_rat = slope / offset;
     println!("slope={0:#?}, offset={1:#?}, slope_ratio={2:#?}", slope, offset, slope_rat);
-
-    let bfl = find_best_fit_in_range(pbars, 500, 7,  30); 
-    println!("from best fit function bfl={0:#?}", bfl);
-    
-    
     
    
+    let tot_num_bar = pbars.len();
 
+    fn test_find_short_long_best_fit(pbars : &bars::Bars) {
+        // find the short line
+        let last_bar_ndx = 500;
+        let bfl = find_best_fit_in_range(&pbars, last_bar_ndx, 7,  25); 
+        println!("from best fit short function bfl={0:#?}", bfl);
+    
+
+        // find the longer line
+        let long_start_ndx = (last_bar_ndx - bfl.num_ele as usize) as usize;
+        let mut min_long_ele=  bfl.num_ele * 3;
+        //if min_long_ele < 60 { min_long_ele = 60}
+        let mut max_long_ele = min_long_ele * 4;
+        
+        //min_long_ele = cmp::max(60,min_long_ele );
+        //println!("min_long_ele={0:#?}  max_long_ele={1:#?}", min_long_ele,max_long_ele );
+        let bf2 = find_best_fit_in_range(&pbars, long_start_ndx, min_long_ele,  max_long_ele); 
+        println!("from best fit long  function bfl={0:#?}", bf2);
+
+        let look_forward_bars = 14;
+        let fut_price_ndx = last_bar_ndx + look_forward_bars;
+        let curr_price = pbars.close[last_bar_ndx];
+        let fut_price = pbars.close[fut_price_ndx];
+        let fp_dif = fut_price - curr_price;
+        let fp_dif_rat = fp_dif / curr_price;
+        println!("fut_price={0:#?} curr_price={1:#?} dif={2:#?} dif_rat={3:#?}", 
+           fut_price, curr_price, fp_dif, fp_dif_rat);
+    }
+
+    fn calc_angle_from_slope(slope1 : f32, slope2 : f32) -> f32 {
+        // use the arc tangent angle formula  then multiply by 57.3 to get degrees
+        return ((slope1 - slope2) /(1.0 + (slope1 * slope2))).atan() * 57.3;
+    }
+
+    fn best_fit_angle(pbars : &bars::Bars, last_bar_ndx : usize, min_short : i32, max_short : i32) -> BNDPair {
+        // find the longer line
+        let bfl = find_best_fit_in_range(&pbars, last_bar_ndx, min_short,  max_short); 
+        //println!("from best fit short function bfl={0:#?}", bfl);
+
+        let long_start_ndx = (last_bar_ndx - bfl.num_ele as usize) as usize;
+        let mut min_long_ele=  bfl.num_ele * 3;
+        //if min_long_ele < 60 { min_long_ele = 60}
+        let mut max_long_ele = min_long_ele * 4;
+        
+        //min_long_ele = cmp::max(60,min_long_ele );
+        //println!("min_long_ele={0:#?}  max_long_ele={1:#?}", min_long_ele,max_long_ele );
+        let bf2 = find_best_fit_in_range(&pbars, long_start_ndx, min_long_ele,  max_long_ele); 
+        //println!("from best fit long  function bfl={0:#?}", bf2);
+
+        let look_forward_bars = 14;
+        let fut_price_ndx = (last_bar_ndx + look_forward_bars).min((pbars.len() ) -1);
+        let curr_price = pbars.close[last_bar_ndx];
+        let fut_price = pbars.close[fut_price_ndx];
+        let fp_dif = fut_price - curr_price;
+        let fp_dif_rat = fp_dif / curr_price;
+        //println!("fut_price={0:#?} curr_price={1:#?} dif={2:#?} dif_rat={3:#?}", 
+        //  fut_price, curr_price, fp_dif, fp_dif_rat);
+        // use the arc tangent angle formula  then multiply by 57.3 to get degrees
+        // subtract from 180 to flip angle we are looking at from lower left to 
+        // upper where 180 dgree line is straight flat and 90 degree line is up.
+        let angle = calc_angle_from_slope(bfl.slope, bf2.slope);
+        return BNDPair {
+            long_line : bf2,
+            short_line : bfl,
+            fp_dif_rat : fp_dif_rat,
+            angle : angle
+         }
+
+    }
+
+    fn build_fit_angles(pbars : &bars::Bars, min_short :  i32, max_short : i32 ) -> Vec<BNDPair> {
+       let mut tout : Vec<BNDPair> = Vec::new();
+       let first_ndx = max_short * 2;
+       let last_ndx = (pbars.len() as i32) - 1;
+       for last_bar_ndx in  first_ndx .. last_ndx {
+           //println!("last_bar_ndx={0:#?}, ", last_bar_ndx);
+           let bfa = best_fit_angle(&pbars, last_bar_ndx as usize, min_short, max_short);
+           //println!("last_bar_ndx={0:#?}, bfa={1:#?}", last_bar_ndx, bfa);
+           tout.push(bfa);
+       }   
+       tout.sort_by_key(|x| ((x.long_line.sloper * 1000000.0) as i64));
+       return tout;
+    }
+
+
+    test_find_short_long_best_fit(&pbars);
+    let bpair =  best_fit_angle(&pbars, 500, 12, 60);
+    println!("bpair={0:#?}", bpair);
+
+    let angles_for_all = build_fit_angles(&pbars, 12,60);
+    print!("angles_for_all={0:#?}", angles_for_all);
 }
