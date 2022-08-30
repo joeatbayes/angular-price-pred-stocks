@@ -5,7 +5,7 @@ In my work attempting to predict future stock price movements
 I have observed that pivotal buying or selling opportunities occur after
 two actions.  For example stock prices drop for 3 weeks then stabilize
 for 1 week.  At these pivotal points prices it can be a good time to 
-buy but we need more data to determine if the current movements 
+buy or sell but we need more data to determine if the current movements 
 indicate a higher probability of a upward or downward movement in the
 future. 
 
@@ -16,17 +16,17 @@ next 10 days will tend to move upward but if prices drop for 3 months and
 stabilize for 1 week they are more likely to resume a downward movement.
 If we can find similar paired movements from the past they may help 
 us predict future prices with a precision higher than the statistical
-base rate and ideally with a precision high enough to act as or confirm
-a buy or sell signal.   
+base rate.  Ideally it will deliver a precision high enough to act 
+as a buy or sell signal or to confirm  independently generated signals.   
 
-This application seeks to validate this theory by finding a set
-of optimal time frames using geometric similarity to predict future
-price movements.  It uses linear regression, K Nearest Neighbor and
-Bayesian math to determine similarity and project the future price
-movement data based on the past movement of prices with similar 
-geometric properties.  If the theory proves valid then we should be
-able to predict directional movement with greater accuracy than the 
-underlying statistical base rate.
+This application seeks to validate the theory by finding a set
+of optimal time frames using multiple linear regression passes. 
+It then uses geometric similarity scoring to select similar movements.
+It then looks at subsequent price movements from those historically
+similar movements to predict future price movements.  
+
+The ML techniques used are  linear regression, K Nearest Neighbor,
+Bayesian math, random permutation optimization.  
 
 
 ------------------------
