@@ -1,26 +1,32 @@
 Stock Price Prediction using angular velocity changes in rust
 By Joseph Ellsworth 2022-08-22
 
-In my work with stocks attempting to predict future price movements
-I have seen that pivotal buying or selling opportunities occur after
+In my work attempting to predict future stock price movements
+I have observed that pivotal buying or selling opportunities occur after
 two actions.  For example stock prices drop for 3 weeks then stabilize
-for 1 week.  At these pivotal end points prices tend to either resume 
-their longer trend or continue a reversal.
+for 1 week.  At these pivotal points prices it can be a good time to 
+buy but we need more data to determine if the current movements 
+indicate a higher probability of a upward or downward movement in the
+future. 
 
 The theory is that certain patterns of these paired movements will result 
 in predictable future price movements.  For example if stock prices drop for
 3 months and then stabilize or rise slightly for 1 month then prices in the
 next 10 days will tend to move upward but if prices drop for 3 months and
-stabilize for 1 week they are more likely to resume a downward movement. 
+stabilize for 1 week they are more likely to resume a downward movement.
+If we can find similar paired movements from the past they may help 
+us predict future prices with a precision higher than the statistical
+base rate and ideally with a precision high enough to act as or confirm
+a buy or sell signal.   
 
 This application seeks to validate this theory by finding a set
-of optimal time frames to analyze and then using geometric similarity
-to predict future price movements.  It uses linear regression,  
-K Nearest Neighbor and Bayesian math to determine 
-similarity and project the future price movement of current data based 
-on the past movement of prices with similar geometric properties.  If the
-theory proves valid then we should be able to predict directional movement 
-with greater accuracy than the underlying statistical base rate.
+of optimal time frames using geometric similarity to predict future
+price movements.  It uses linear regression, K Nearest Neighbor and
+Bayesian math to determine similarity and project the future price
+movement data based on the past movement of prices with similar 
+geometric properties.  If the theory proves valid then we should be
+able to predict directional movement with greater accuracy than the 
+underlying statistical base rate.
 
 
 ------------------------
@@ -35,7 +41,7 @@ Key Repository Files:
 •	Bars Parser / CSV: 
         https://github.com/joeatbayes/angular-price-pred-stocks/blob/main/predictor/src/bar_parser.rs
 
-•   K Nearest Neighbor Matching 
+•   K Nearest Neighbor Matching using binary search
         
 
 •   Optimizer seeking to find best look forward and minimum short trend line
@@ -134,7 +140,7 @@ When comparing two tuple scores we can use a formula such as
      velDelt = 1 / (VelChgAngle1 - velChgAngle2)
      netSim = ( sim1 + sim2)  / velDelt
 
-    SEE: predictor/src/reg_fit.sr methods sim_score
+     SEE: predictor/src/reg_fit.sr methods sim_score
 
 
 Note: To allow for large price changes we must compute a price movement range from
