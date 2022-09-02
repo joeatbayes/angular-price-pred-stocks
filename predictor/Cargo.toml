@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 linreg = "0.2"
 string-builder = "0.2"
+bisection="0.1"

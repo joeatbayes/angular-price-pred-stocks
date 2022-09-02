@@ -59,7 +59,7 @@ fn main() {
     let bpair =  rfit::best_fit_angle(&pbars, 500, 12, 60);
     println!("bpair={0:#?}", bpair);
 
-    let angles_for_all = rfit::build_fit_angles(&pbars, 12,60);
+    let angles_for_all = rfit::build_fit_angles(&pbars, 9,45);
     print!("angles_for_all={0:#?}", angles_for_all);
 
 

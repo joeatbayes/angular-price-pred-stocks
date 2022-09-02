@@ -9,6 +9,10 @@ pub mod reg_fit {
     use string_builder::Builder;
     use std::string::FromUtf8Error;
 
+    // Stores a single line description developed from 
+    // multiple linear regression passes over a base set
+    // of floating point data normally a column of stock
+    // prices
     #[derive(Debug,Copy,Clone)]
     pub struct BestNumDayFit {
         pub sloper : f32,
@@ -19,12 +23,30 @@ pub mod reg_fit {
         pub slope : f32
     }
 
+    // Stores a pair of lines the long trend line
+    // and short trend line plus the angle of intersection 
+    // between the two lines and a single forward looking
+    // projection showing how the prices moved next 
     #[derive(Debug,Copy,Clone)]
     pub struct BNDPair {
         pub long_line : BestNumDayFit,
         pub short_line : BestNumDayFit,
         pub angle : f32,
-        pub fp_dif_rat : f32
+        pub fp_dif_rat : f32,
+        pub score: f32 // used after matching process 
+    }
+
+
+
+    // Store the set of pairs most similiar to the
+    // master pair.  The matches are listed in most
+    // similar firest. Where the amount of similarity
+    // is judged by the sim_score methods of BNDPair
+    // BestNumDayFit. 
+    #[derive(Debug,Clone)]
+    pub struct BNDMatch {
+        pub master : BNDPair,
+        pub matches : Vec<BNDPair>
     }
 
 
@@ -51,7 +73,66 @@ pub mod reg_fit {
           let sscore = self.short_line.sim_score(cmp.short_line);
           return lscore + (sscore * 0.3);
         } 
+
+        // compute a similarity score between two BNDpair based
+        // and the difference in angle and length of total line
+        // analyzed short & long. The therory is that what we
+        // really care about is the angle at intersection of 
+        // the lines rather than their absolue slopes.  Not sure
+        // if it makes total sense. but it does reduce the scoring
+        // to only two weighted factors.   It could have an issue
+        // a slight bend down from downward trend being viewed the
+        // same as a slight bend less positive on a upward tragetory.
+        pub fn sim_score_angle(&self, cmp : BNDPair) -> f32 {
+            let dur1 = self.long_line.num_ele + self.short_line.num_ele;
+            let dur2 = cmp.long_line.num_ele + cmp.short_line.num_ele;
+            let ddif = dur1 - dur2;
+            let dsum = dur1 + dur2; // use dsum for ratio to accomodate gaurantee scale from 0 to 1.
+            let drat = 1.0 - (((ddif as f32) / (dsum as f32))*2.0); 
+                // when comparing against dsum we have effectively doubled our line len
+                // use the 1 - to force a small difference to act as a small discount
+                // against the angle score. 
+            let adif = self.angle - cmp.angle;
+            let asum = self.angle + cmp.angle;
+            let arat = (adif / asum)*2.0;
+            let mut ascore = arat * drat * 1000.0;
+
+            // If slope of ain point is upward then change magnitude
+            // of score to force into separate realm from the negative
+            // slopes. 
+            if self.long_line.slope > 0.00001 {
+               ascore = ascore * 1000.0;
+            }
+            return ascore;
+        } 
+
+        // figure out how much of the lines for two BNDPair overlap
+        // with each other and return that number.
+        pub fn overlap(&self, cmp : &BNDPair) -> f32 {
+           let begn = self.long_line.end_ndx - self.long_line.num_ele;
+           let endn = self.short_line.end_ndx;
+
+           let begc = cmp.long_line.end_ndx - cmp.long_line.num_ele;
+           let endc = cmp.short_line.end_ndx;
+
+           // figure out how much is poking out the front
+           let fndur : i32 = if begn < begc && endn > begc {
+               begc - begn
+           } else {
+              0
+           };
+
+           // figure out how much is poking out the front
+           let endur : i32 = if endn > endc && begn < endc {
+              endn - endc
+           } else {
+              0
+           };
+           let num_overlap = self.long_line.num_ele - (fndur + endur);
+           return (num_overlap as f32) / (self.long_line.num_ele as f32);
+        }
     }
+
 
      // produce a human friendly columnuar report showing
      // contents of all the BND Pairs
@@ -62,14 +143,14 @@ pub mod reg_fit {
                 spc += 1;
                 if spc > 50 {
                     b.append("\n");
-                    b.append("   long  long      long    long     short  short    short   short  interset   fp dif\n");
-                    b.append("  slope   len    offset     end     slope    len   offset     end     angle     Perc\n");
-                    b.append("------- ----- --------- ------- --------- ------- ------- ------- --------- --------\n");
+                    b.append("   long  long      long    long     short short     short    short intersect   fp dif\n");
+                    b.append("  slope   len    offset     end     slope   len    offset      end     angle     Perc\n");
+                    b.append("------- ----- --------- ------- --------- ------ -------- -------- ---------- -------\n");
                     spc = 0;
                 }
                 let sl = bpair.short_line;
                 let ll = bpair.long_line;
-                let lstr = format!("{lslope:7.5} {llen:5} {loffset:9.3} {lend:7} {sslope:9.5} {slen:5} {soffset:9.3} {send:7} {angle:9.2} {drat:7.2}%\n",
+                let lstr = format!("{lslope:8.5} {llen:5} {loffset:9.3} {lend:7} {sslope:9.5} {slen:5} {soffset:9.3} {send:7} {angle:9.2} {drat:7.2}%\n",
                     lslope=ll.sloper,  llen=ll.num_ele, loffset=ll.offset, lend=ll.end_ndx,
                     sslope=sl.sloper, slen=sl.num_ele, soffset=sl.offset, send=sl.end_ndx,
                     angle=bpair.angle, drat=(bpair.fp_dif_rat*100.0));
@@ -120,12 +201,14 @@ pub mod reg_fit {
         let num_ele = pbars.len();
         let max_len :i32 = max_lenp.min((num_ele as i32)-1).min(end_ndx as i32);
         //println!("max_lenp={0:#?} max_len={1:#?}", max_len, max_lenp);
-        let mut best : BestNumDayFit = BestNumDayFit {sloper: 0.0, 
+        let mut best : BestNumDayFit = BestNumDayFit {
+            sloper: 0.0, 
             num_ele : -1, 
             err : 99999999.99, 
             offset : 0.0,
             end_ndx: (end_ndx as i32),
-            slope : 0.0};
+            slope : 0.0
+        };
     
         for num_day in min_len .. max_len {
             //println!("num_ele={4:#?} numDay={0:#?} min_len={1:#?} max_len={2:#?} end_ndx={3:#?}", num_day, min_len, max_len,  end_ndx, num_ele);
@@ -182,7 +265,7 @@ pub mod reg_fit {
         let bf2 = find_best_fit_in_range(&pbars, long_start_ndx, min_long_ele,  max_long_ele); 
         //println!("from best fit long  function bfl={0:#?}", bf2);
 
-        let look_forward_bars = 4;
+        let look_forward_bars = 3;
         let fut_price_ndx = (last_bar_ndx + look_forward_bars).min((pbars.len() ) -1);
         let curr_price = pbars.close[last_bar_ndx];
         let fut_price = pbars.close[fut_price_ndx];
@@ -194,12 +277,14 @@ pub mod reg_fit {
         // subtract from 180 to flip angle we are looking at from lower left to 
         // upper where 180 dgree line is straight flat and 90 degree line is up.
         let angle = calc_angle_from_slope(bfl.slope, bf2.slope);
-        return BNDPair {
+        let tout : BNDPair = BNDPair {
             long_line : bf2,
             short_line : bfl,
             fp_dif_rat : fp_dif_rat,
-            angle : angle
-         }
+            angle : angle,
+            score : 0.0
+        };
+        return tout;
     }
 
     // for every available bar compute the long trend lines with the 
@@ -216,11 +301,126 @@ pub mod reg_fit {
            //println!("last_bar_ndx={0:#?}, bfa={1:#?}", last_bar_ndx, bfa);
            tout.push(bfa);
        }   
+       //tout.sort_by_key(|x| ((x.angle * 1000000.0) as i64));
        tout.sort_by_key(|x| ((x.long_line.sloper * 1000000.0) as i64));
        return tout;
     }
 
-    
-    
+    //enum CmpRes {
+    //    Gt,
+    //    Le,
+    //    Eq
+    //}
+
+    // search an sorted array using binary search and return 
+    // the index of the matching element or the point where 
+    // can not be found. 
+    // todo - convert this to generic function with any structure
+    // and a compare function. 
+    pub fn bfind(arr : &Vec<BNDPair>, cmp : &BNDPair) -> usize {
+        let mut maxn = arr.len();
+        let mut minn : usize = 0;
+
+        loop {
+            let ndx : usize = (maxn + minn) / 2;
+            let ae = arr[ndx];
+            if maxn == minn {
+                // can not search any lower
+                return ndx;
+            } else  if cmp.long_line.sloper < ae.long_line.sloper {
+               // search value is less than test node so search left 1/2
+               maxn = ndx;    
+            } else if cmp.long_line.sloper > ae.long_line.sloper {
+               // search value is higher than test node so search right 1/2 
+               minn = ndx;        
+            } else {
+                // either found the search value 
+                // TOOD: Add support for multiple matching left by scanning 
+                // left until do not find a match.
+                return ndx;
+            };
+ 
+        } // loop
+    } // fn
+
+
+    pub fn get_similar(pairs : &Vec<BNDPair>, mpair : &BNDPair) -> Vec<BNDPair> {
+        let look_out = 100;
+        let max_overlap = 0.3;
+        let num_to_keep = 10;
+        //let end_ndx = ndx + look_out;
+        let last_ndx = pairs.len() -1;
+        let mut sims : Vec<BNDPair> = Vec::new();
+        // find the item with the closest matching long slope
+        let ndx = bfind(&pairs, &mpair);
+        // capture close by items and score them.
+        for icnt  in 0 .. look_out {
+            let lndx = (ndx - icnt).max(0);
+            let hndx = (ndx + icnt).min(last_ndx);
+            let mut lpair = pairs[lndx];
+            let mut hpair = pairs[hndx];
+            if mpair.overlap(&lpair) < max_overlap {
+               lpair.score = mpair.sim_score(lpair);
+               sims.push(lpair.clone());
+            }
+            if mpair.overlap(&hpair) < max_overlap {
+               hpair.score = mpair.sim_score(hpair);
+               sims.push(hpair.clone());
+            }
+        } // for icnt
+
+        // Sort the candidates based on their matching scores
+        sims.sort_by_key(|x| ((0.0 - (x.score * 10000000.0)) as i64));
+        // and keep just the best matches 
+
+        //  Collect the best matching items that do not overlap
+        // too much with either the main item or other higher
+        // scored items. 
+        let mut tout : Vec<BNDPair> = Vec::new();
+        for sim in sims { 
+           // while eliminating any lower score candidates that
+           // overlap the main or any higher score candidates by 
+           //  over 30%.
+           let moverlap = mpair.overlap(&sim);
+           if moverlap > max_overlap {
+              continue;
+           }
+           // check to see if new candidate overlaps with other 
+           // items we already decided to keep
+           let mut dokeep = true;
+           for keeper in &tout {
+               let koverlap = sim.overlap(&keeper);
+               if koverlap > max_overlap {
+                  dokeep = false;
+                  break;
+               } 
+            }
+            if dokeep {
+                tout.push(sim);
+                if tout.len() > num_to_keep {
+                    break;
+                }
+            }
+        }
+        return tout;
+    }
+
+
+    // capture the sims for every element
+    // This could run into-excess memory usage 
+    // if we try to store all of them due to the copy
+    // behavior of rust.      
+    pub fn build_similarity_matrix(pairs : &Vec<BNDPair>) -> Vec<BNDMatch> {
+        let mut tout : Vec<BNDMatch> = Vec::new();
+        for mpair in pairs {
+            let sims = get_similar(pairs, mpair);
+            let matched : BNDMatch = BNDMatch {
+                master : mpair.clone(),
+                matches : sims
+            };
+            tout.push(matched);
+        } // for mpair
+        return tout;
+    } // fn
 
 } // mod
