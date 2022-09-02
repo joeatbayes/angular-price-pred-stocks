@@ -1,12 +1,47 @@
 pub mod bar_parser;
 pub mod reg_fit;
+pub mod angle_matcher;
 use crate::bar_parser::bar_parser as bars;
+use crate::angle_matcher::matcher as matcher;
 use crate::reg_fit::reg_fit as rfit;
 use linreg::{linear_regression};
+//use sysinfo::SystemExt::System;
+//use sysinfo::Process;
+
+// First we update all information of our system struct.
+
+
+fn test_find_short_long_best_fit(pbars : &bars::Bars) {
+    // find the short line
+    let last_bar_ndx = 500;
+    let bfl = rfit::find_best_fit_in_range(&pbars, last_bar_ndx, 7,  25); 
+    println!("from best fit short function bfl={0:#?}", bfl);
+
+
+    // find the longer line
+    let long_start_ndx = (last_bar_ndx - bfl.num_ele as usize) as usize;
+    let min_long_ele=  bfl.num_ele * 3;
+    let max_long_ele = min_long_ele * 4;
+    
+    //min_long_ele = cmp::max(60,min_long_ele );
+    //println!("min_long_ele={0:#?}  max_long_ele={1:#?}", min_long_ele,max_long_ele );
+    let bf2 = rfit::find_best_fit_in_range(&pbars, long_start_ndx, min_long_ele,  max_long_ele); 
+    println!("from best fit long  function bfl={0:#?}", bf2);
+
+    let look_forward_bars = 14;
+    let fut_price_ndx = last_bar_ndx + look_forward_bars;
+    let curr_price = pbars.close[last_bar_ndx];
+    let fut_price = pbars.close[fut_price_ndx];
+    let fp_dif = fut_price - curr_price;
+    let fp_dif_rat = fp_dif / curr_price;
+    println!("fut_price={0:#?} curr_price={1:#?} dif={2:#?} dif_rat={3:#?}", 
+       fut_price, curr_price, fp_dif, fp_dif_rat);
+}
 
 
 fn main() {
-    println!("Hello, world!");
+    //let mut system = System::new();
+    //system.refresh_all();
 
     let pbars = bars::read_file(&"../data/bars/SPY.csv");
     println!("pbars={0:#?}", pbars);
@@ -27,33 +62,6 @@ fn main() {
     
    
     //let tot_num_bar = pbars.len();
-
-    fn test_find_short_long_best_fit(pbars : &bars::Bars) {
-        // find the short line
-        let last_bar_ndx = 500;
-        let bfl = rfit::find_best_fit_in_range(&pbars, last_bar_ndx, 7,  25); 
-        println!("from best fit short function bfl={0:#?}", bfl);
-    
-
-        // find the longer line
-        let long_start_ndx = (last_bar_ndx - bfl.num_ele as usize) as usize;
-        let min_long_ele=  bfl.num_ele * 3;
-        let max_long_ele = min_long_ele * 4;
-        
-        //min_long_ele = cmp::max(60,min_long_ele );
-        //println!("min_long_ele={0:#?}  max_long_ele={1:#?}", min_long_ele,max_long_ele );
-        let bf2 = rfit::find_best_fit_in_range(&pbars, long_start_ndx, min_long_ele,  max_long_ele); 
-        println!("from best fit long  function bfl={0:#?}", bf2);
-
-        let look_forward_bars = 14;
-        let fut_price_ndx = last_bar_ndx + look_forward_bars;
-        let curr_price = pbars.close[last_bar_ndx];
-        let fut_price = pbars.close[fut_price_ndx];
-        let fp_dif = fut_price - curr_price;
-        let fp_dif_rat = fp_dif / curr_price;
-        println!("fut_price={0:#?} curr_price={1:#?} dif={2:#?} dif_rat={3:#?}", 
-           fut_price, curr_price, fp_dif, fp_dif_rat);
-    }
 
        test_find_short_long_best_fit(&pbars);
     
@@ -90,7 +98,7 @@ fn main() {
     let rep_str = rfit::as_rep_string(&angles_for_all).unwrap();
     println!("{0}", rep_str);
 
-    let matches = rfit::build_similarity_matrix(&angles_for_all);
+    let matches = matcher::build_similarity_matrix(&angles_for_all);
     println!("matches = {0:#?}", &matches);
 
     // report that shows the keepers for each bar
@@ -107,5 +115,13 @@ fn main() {
     // basic percentage.  What we really want is the basic probability
     // less the base probability it is the differential as lift
     // that represents something better.
+
+    // And finally the RAM and SWAP information:
+    //println!("total memory: {} kB", system.get_total_memory());
+    //println!("used memory : {} kB", system.get_used_memory());
+    // TODO:  exended this to print data process runtime and memory
+    // usage for this process from Struct sysinfo::Process
+    // https://tikv.github.io/doc/sysinfo/index.html
+
 
 } // main

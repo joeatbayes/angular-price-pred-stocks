@@ -2,6 +2,14 @@
 
 
 pub mod reg_fit {
+    // Use linear regression to build find the number of days
+    // which provide the best (lowest error) fit for a short 
+    // line and a long liine preceding a specified bar.   
+    // Also includes data structures and helper methods to 
+    // repeat this process for a set subset of bars to allow 
+    // bulk analysis.  The output of this pass is generally 
+    // the primary input for angle_matcher::matcher
+    
     use crate::bar_parser::bar_parser as bars;
     //use crate::bar_parser::bar_parser as bars;
     use linreg::{linear_regression};
@@ -38,17 +46,7 @@ pub mod reg_fit {
 
 
 
-    // Store the set of pairs most similiar to the
-    // master pair.  The matches are listed in most
-    // similar firest. Where the amount of similarity
-    // is judged by the sim_score methods of BNDPair
-    // BestNumDayFit. 
-    #[derive(Debug,Clone)]
-    pub struct BNDMatch {
-        pub master : BNDPair,
-        pub matches : Vec<BNDPair>
-    }
-
+    
 
     impl BestNumDayFit {
       // compute a similarity score by compareing  two lines 
@@ -321,133 +319,5 @@ pub mod reg_fit {
     //    Eq
     //}
 
-    // search an sorted array using binary search and return 
-    // the index of the matching element or the point where 
-    // can not be found. 
-    // todo - convert this to generic function with any structure
-    // and a compare function. 
-    pub fn bfind(arr : &Vec<BNDPair>, cmp : &BNDPair) -> usize {
-        let mut maxn : usize = arr.len();
-        let mut minn : usize = 0;
-        let mut last_ndx : usize = 0;
-       
-        loop {
-            let ndx : usize = (maxn + minn) / 2;
-            let ae = arr[ndx];
-            //println!("bfind ndx={0:#?} maxn={1:#?} minn={2:#?} aesloper={3:#?} cmpsloper={4:#?} lastndx={5:#?}", 
-            //    &ndx, &maxn, &minn, &ae.long_line.sloper, &cmp.long_line.sloper, &last_ndx);
-            if maxn == minn {
-                // can not search any lower
-                return ndx; 
-            } else if ndx == last_ndx {
-              // hysteris where the bars are one line apart and 
-              // can never break the stalemate with integer division
-              return ndx; 
-            } else if cmp.long_line.sloper < ae.long_line.sloper {
-               // search value is less than test node so search left 1/2
-               maxn = ndx;    
-            } else if cmp.long_line.sloper > ae.long_line.sloper {
-               // search value is higher than test node so search right 1/2 
-               minn = ndx;        
-            } else {
-                // either found the search value 
-                // TOOD: Add support for multiple matching left by scanning 
-                // left until do not find a match.
-                return ndx;
-            };
-            //println!("bfind ndx={0:#?} lastndx={1:#?}", &ndx, &last_ndx);
-            last_ndx = ndx;
-
-    
- 
-        } // loop
-    } // fn
-
-
-    pub fn get_similar(pairs : &Vec<BNDPair>, mpair : &BNDPair) -> Vec<BNDPair> {
-        let look_out = 200;
-        let max_overlap = 0.3;
-        let num_to_keep = 8;
-        //let end_ndx = ndx + look_out;
-        let last_ndx = pairs.len() -1;
-        let mut sims : Vec<BNDPair> = Vec::new();
-        // find the item with the closest matching long slope
-        //println!("start bfind mpair={0:#?}", &mpair);
-        let ndx = bfind(&pairs, &mpair);
-        //println!("bfind ndx={0:#?} mpair={1:#?}", ndx, &mpair);
-        // capture close by items and score them.
-        for icnt  in 0 .. look_out {
-            let lndx = ndx - icnt.min(ndx);
-            let hndx = (ndx + icnt).min(last_ndx);
-            let mut lpair = pairs[lndx];
-            let mut hpair = pairs[hndx];
-            let loverlap = mpair.overlap(&lpair);
-            let hoverlap = mpair.overlap(&hpair);
-            //println!("loverlap={0:#?} hoverlap={1:#?}", &loverlap, &hoverlap);
-            if loverlap < max_overlap {
-               lpair.score = mpair.sim_score(lpair);
-               sims.push(lpair.clone());
-            }
-            if hoverlap < max_overlap {
-               hpair.score = mpair.sim_score(hpair);
-               sims.push(hpair.clone());
-            }
-        } // for icnt
-
-        // Sort the candidates based on their matching scores
-        sims.sort_by_key(|x| ((0.0 - (x.score * 10000000.0)) as i64));
-        // and keep just the best matches 
-        //println!("sims={0:#?}", &sims);
-
-        //  Collect the best matching items that do not overlap
-        // too much with either the main item or other higher
-        // scored items. 
-        let mut tout : Vec<BNDPair> = Vec::new();
-        for sim in sims { 
-           // while eliminating any lower score candidates that
-           // overlap the main or any higher score candidates by 
-           //  over 30%.
-           let moverlap = mpair.overlap(&sim);
-           if moverlap > max_overlap {
-              continue;
-           }
-           // check to see if new candidate overlaps with other 
-           // items we already decided to keep
-           let mut dokeep = true;
-           for keeper in &tout {
-               let koverlap = sim.overlap(&keeper);
-               if koverlap > max_overlap {
-                  dokeep = false;
-                  break;
-               } 
-            }
-            if dokeep {
-                tout.push(sim);
-                if tout.len() > num_to_keep {
-                    break;
-                }
-            }
-        }
-        //println!("keepers={0:#?}", &tout);
-        return tout;
-    }
-
-
-    // capture the sims for every element
-    // This could run into-excess memory usage 
-    // if we try to store all of them due to the copy
-    // behavior of rust.      
-    pub fn build_similarity_matrix(pairs : &Vec<BNDPair>) -> Vec<BNDMatch> {
-        let mut tout : Vec<BNDMatch> = Vec::new();
-        for mpair in pairs {
-            let sims = get_similar(pairs, mpair);
-            let matched : BNDMatch = BNDMatch {
-                master : mpair.clone(),
-                matches : sims
-            };
-            tout.push(matched);
-        } // for mpair
-        return tout;
-    } // fn
-
+   
 } // mod
