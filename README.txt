@@ -5,7 +5,7 @@ In my work attempting to predict future stock price movements
 I have observed that pivotal buying or selling opportunities occur after
 two actions.  For example stock prices drop for 3 weeks then stabilize
 for 1 week.  At these pivotal points prices it can be a good time to 
-buy or sell but we need more data to determine if the current movements 
+buy or sell.  We need more data to determine if the current movements 
 indicate a higher probability of a upward or downward movement in the
 future. 
 
@@ -18,7 +18,6 @@ If we can find similar paired movements from the past they may help
 us predict future prices with a precision higher than the statistical
 base rate.  Ideally it will deliver a precision high enough to act 
 as a buy or sell signal or to confirm  independently generated signals.   
-
 This application seeks to validate the theory by finding a set
 of optimal time frames using multiple linear regression passes. 
 It then uses geometric similarity scoring to select similar movements.
@@ -42,17 +41,22 @@ Key Repository Files:
         https://github.com/joeatbayes/angular-price-pred-stocks/blob/main/predictor/src/bar_parser.rs
 
 •   K Nearest Neighbor Matching using binary search
-        
+        https://github.com/joeatbayes/angular-price-pred-stocks/blob/main/predictor/src/angle_matcher.rs
+
+•   Config file for default settings of magic constants like how many bars to harvest
+    how many neighbors to consider in initial harvest.  How many neighbors to keep, etc.
+         https://github.com/joeatbayes/angular-price-pred-stocks/blob/main/predictor/src/config.rs
 
 •   Optimizer seeking to find best look forward and minimum short trend line
     lengths.
 
+----------------------------------------------------------------
+Sample from the Initial Linear Regression slope fitting for SPY
+----------------------------------------------------------------
 
-•  Sample from the Initial Linear Regression slope fitting for SPY
-
-         long  long      long    long     short  short    short   short  interset   fp dif
-        slope   len    offset     end     slope    len   offset     end     angle     Perc
-        ------- ----- --------- ------- --------- ------- ------- ------- --------- --------
+         long  long      long    long     short  short      short   short intersect   fp dif
+        slope   len    offset     end     slope    len     offset     end     angle     Perc
+        ------- ----- --------- ------- --------- ----- --------- ------- --------- --------
         0.00397    43    73.301    1097   0.00568    14    83.658    1111      9.18    1.72%
         0.00400    53   258.638    6893   0.00076    17   307.605    6910    -33.20    2.38%
         0.00403    55   256.283    6893   0.00089    18   307.302    6911    -31.16    1.01%
@@ -74,6 +78,101 @@ Key Repository Files:
         0.00530    47   239.832    6877   0.00737    14   290.090    6891     13.48    3.68%
         0.00537    42    96.910    1475  -0.00017    14   117.488    1489    -29.09    1.85%
         0.00545    45   239.239    6875   0.00672    13   287.808    6888     10.44   -5.88%
+
+-----------------------------------------------
+Sample from basic Stats for underlying bar file
+-----------------------------------------------
+-- TODO
+
+---------------------------------------------
+-- Sample from KNN Matching win loss analysis
+---------------------------------------------
+  -- TODO Include basic stats here compared to 
+  -- base rate differential analysis also Include
+  -- average win, average loss and sum of loss 
+  -- sum of win. We are seeking a way to reconcile total
+  -- amount that would have been one if every match had been
+  -- traded versus total amount lost if every match had been
+  -- traded.   
+
+
+-----------------------------------------
+Sample from K Nearest Neighbor matching 
+-----------------------------------------
+ -- TODO
+
+
+
+------------------------------------------
+sample raw data from KNN matching 
+------------------------------------------
+    BNDMatch {
+        master: BNDPair {
+            long_line: BestNumDayFit {
+                sloper: 0.00067896856,
+                num_ele: 61,
+                err: 0.0054995078,
+                offset: 118.91983,
+                end_ndx: 3161,
+                slope: 0.08099416,
+            },
+            short_line: BestNumDayFit {
+                sloper: -0.00033224997,
+                num_ele: 13,
+                err: 0.003722864,
+                offset: 122.25484,
+                end_ndx: 3174,
+                slope: -0.040604267,
+            },
+            angle: -6.9562035,
+            fp_dif_rat: 0.010059732,
+            score: 0.0,
+        },
+        matches: [
+            BNDPair {
+                long_line: BestNumDayFit {
+                    sloper: 0.0006738162,
+                    num_ele: 59,
+                    err: 0.01786686,
+                    offset: 108.253456,
+                    end_ndx: 4454,
+                    slope: 0.073890686,
+                },
+                short_line: BestNumDayFit {
+                    sloper: 0.0015563975,
+                    num_ele: 13,
+                    err: 0.0026583597,
+                    offset: 115.65132,
+                    end_ndx: 4467,
+                    slope: 0.18060437,
+                },
+                angle: 6.012009,
+                fp_dif_rat: 0.00025347513,
+                score: 1267.2136,
+            },
+            BNDPair {
+                long_line: BestNumDayFit {
+                    sloper: 0.0006931363,
+                    num_ele: 59,
+                    err: 0.01128587,
+                    offset: 202.05121,
+                    end_ndx: 5582,
+                    slope: 0.13981946,
+                },
+                short_line: BestNumDayFit {
+                    sloper: 0.0015727861,
+                    num_ele: 13,
+                    err: 0.0030207955,
+                    offset: 205.70494,
+                    end_ndx: 5595,
+                    slope: 0.32467023,
+                },
+                angle: 10.028344,
+                fp_dif_rat: 0.0062425425,
+                score: 1267.2136,
+            }
+        ]
+    }
 
 
 
@@ -127,7 +226,7 @@ To compute the similarity of any single line we can use a formula such as:
     as A long term trend + a shorter term different movement which I 
     think represent a indicator to predict future prices. 
     
-    SEE: predictor/src/reg_fit.rs methodbest_fit_angle
+    SEE: predictor/src/reg_fit.rs method best_fit_angle
          predictor/src/reg_fit.rs method best-build_fit_angles
 
 This is intended to allow the slope to be the main driver of similarity but 
@@ -141,6 +240,11 @@ When comparing two tuple scores we can use a formula such as
      netSim = ( sim1 + sim2)  / velDelt
 
      SEE: predictor/src/reg_fit.sr methods sim_score
+
+NOTE: A alternative approach for comparing similarity is to compare 
+  the angles of intersect as the primary key and the total length
+  of the two trend lines as the secondary input. This has fewer
+  weighting values and may yield a superior scoring mechanism. 
 
 
 Note: To allow for large price changes we must compute a price movement range from
