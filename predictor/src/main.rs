@@ -56,6 +56,11 @@ fn main() {
     }
 
        test_find_short_long_best_fit(&pbars);
+    
+    // TODO:  We want to be able to process for only a slice
+    //  of pbars especially when testing Eg:  only process
+    //  bars 500 to 700 out of a set that may be thousands 
+    //  of bars long. 
     let bpair =  rfit::best_fit_angle(&pbars, 500, 12, 60);
     println!("bpair={0:#?}", bpair);
 
@@ -82,8 +87,11 @@ fn main() {
     //    let most_sim = find_most_similar(bpair, &angles_for_all); 
     //}
 
-    let rep_str = rfit::as_rep_string(angles_for_all).unwrap();
+    let rep_str = rfit::as_rep_string(&angles_for_all).unwrap();
     println!("{0}", rep_str);
+
+    let matches = rfit::build_similarity_matrix(&angles_for_all);
+    println!("matches = {0:#?}", &matches);
 
 
 } // main

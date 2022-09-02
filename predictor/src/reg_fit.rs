@@ -136,10 +136,10 @@ pub mod reg_fit {
 
      // produce a human friendly columnuar report showing
      // contents of all the BND Pairs
-     pub fn as_rep_string(dta : Vec<BNDPair>) -> Result<String, FromUtf8Error> {
+     pub fn as_rep_string(dta : &Vec<BNDPair>) -> Result<String, FromUtf8Error> {
             let mut b = Builder::default();
             let mut spc = 99;
-            for bpair in &dta {
+            for bpair in dta {
                 spc += 1;
                 if spc > 50 {
                     b.append("\n");
@@ -318,16 +318,23 @@ pub mod reg_fit {
     // todo - convert this to generic function with any structure
     // and a compare function. 
     pub fn bfind(arr : &Vec<BNDPair>, cmp : &BNDPair) -> usize {
-        let mut maxn = arr.len();
+        let mut maxn : usize = arr.len();
         let mut minn : usize = 0;
-
+        let mut last_ndx : usize = 0;
+       
         loop {
             let ndx : usize = (maxn + minn) / 2;
             let ae = arr[ndx];
+            //println!("bfind ndx={0:#?} maxn={1:#?} minn={2:#?} aesloper={3:#?} cmpsloper={4:#?} lastndx={5:#?}", 
+            //    &ndx, &maxn, &minn, &ae.long_line.sloper, &cmp.long_line.sloper, &last_ndx);
             if maxn == minn {
                 // can not search any lower
-                return ndx;
-            } else  if cmp.long_line.sloper < ae.long_line.sloper {
+                return ndx; 
+            } else if ndx == last_ndx {
+              // hysteris where the bars are one line apart and 
+              // can never break the stalemate with integer division
+              return ndx; 
+            } else if cmp.long_line.sloper < ae.long_line.sloper {
                // search value is less than test node so search left 1/2
                maxn = ndx;    
             } else if cmp.long_line.sloper > ae.long_line.sloper {
@@ -339,6 +346,10 @@ pub mod reg_fit {
                 // left until do not find a match.
                 return ndx;
             };
+            //println!("bfind ndx={0:#?} lastndx={1:#?}", &ndx, &last_ndx);
+            last_ndx = ndx;
+
+    
  
         } // loop
     } // fn
@@ -352,18 +363,23 @@ pub mod reg_fit {
         let last_ndx = pairs.len() -1;
         let mut sims : Vec<BNDPair> = Vec::new();
         // find the item with the closest matching long slope
+        println!("start bfind mpair={0:#?}", &mpair);
         let ndx = bfind(&pairs, &mpair);
+        println!("bfind ndx={0:#?} mpair={1:#?}", ndx, &mpair);
         // capture close by items and score them.
         for icnt  in 0 .. look_out {
-            let lndx = (ndx - icnt).max(0);
+            let lndx = ndx - icnt.min(ndx);
             let hndx = (ndx + icnt).min(last_ndx);
             let mut lpair = pairs[lndx];
             let mut hpair = pairs[hndx];
-            if mpair.overlap(&lpair) < max_overlap {
+            let loverlap = mpair.overlap(&lpair);
+            let hoverlap = mpair.overlap(&hpair);
+            println!("loverlap={0:#?} hoverlap={1:#?}", &loverlap, &hoverlap);
+            if loverlap < max_overlap {
                lpair.score = mpair.sim_score(lpair);
                sims.push(lpair.clone());
             }
-            if mpair.overlap(&hpair) < max_overlap {
+            if hoverlap < max_overlap {
                hpair.score = mpair.sim_score(hpair);
                sims.push(hpair.clone());
             }
@@ -372,6 +388,7 @@ pub mod reg_fit {
         // Sort the candidates based on their matching scores
         sims.sort_by_key(|x| ((0.0 - (x.score * 10000000.0)) as i64));
         // and keep just the best matches 
+        println!("sims={0:#?}", &sims);
 
         //  Collect the best matching items that do not overlap
         // too much with either the main item or other higher
@@ -402,6 +419,7 @@ pub mod reg_fit {
                 }
             }
         }
+        println!("keepers={0:#?}", &tout);
         return tout;
     }
 
