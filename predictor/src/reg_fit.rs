@@ -115,21 +115,30 @@ pub mod reg_fit {
            let begc = cmp.long_line.end_ndx - cmp.long_line.num_ele;
            let endc = cmp.short_line.end_ndx;
 
-           // figure out how much is poking out the front
-           let fndur : i32 = if begn < begc && endn > begc {
-               begc - begn
+           if endn < begc {
+                return 0.0
+           }
+           else if begn > endc {
+                return 0.0;
            } else {
-              0
-           };
+                // figure out how much is poking out the front
+                let fndur : i32 = if begn < begc && endn > begc {
+                    begc - begn
+                } else {
+                    0
+                };
 
-           // figure out how much is poking out the front
-           let endur : i32 = if endn > endc && begn < endc {
-              endn - endc
-           } else {
-              0
-           };
-           let num_overlap = self.long_line.num_ele - (fndur + endur);
-           return (num_overlap as f32) / (self.long_line.num_ele as f32);
+                // figure out how much is poking out the front
+                let endur : i32 = if endn > endc && begn < endc {
+                    endn - endc
+                } else {
+                    0
+                };
+                let num_overlap = self.long_line.num_ele - (fndur + endur);
+                //println!("overlap begn={0:#?} endn={1:#?} begc={2:#?} endc={3:#?} fndur={4:#?} endur={5:#?} num_overlap={6:#?} numele={7:#?}",
+                //    &begn, &endn, &begc, &endc, &fndur, &endur, &num_overlap, self.long_line.num_ele);
+                return (num_overlap as f32) / (self.long_line.num_ele as f32);
+           }
         }
     }
 
@@ -356,16 +365,16 @@ pub mod reg_fit {
 
 
     pub fn get_similar(pairs : &Vec<BNDPair>, mpair : &BNDPair) -> Vec<BNDPair> {
-        let look_out = 100;
+        let look_out = 200;
         let max_overlap = 0.3;
-        let num_to_keep = 10;
+        let num_to_keep = 8;
         //let end_ndx = ndx + look_out;
         let last_ndx = pairs.len() -1;
         let mut sims : Vec<BNDPair> = Vec::new();
         // find the item with the closest matching long slope
-        println!("start bfind mpair={0:#?}", &mpair);
+        //println!("start bfind mpair={0:#?}", &mpair);
         let ndx = bfind(&pairs, &mpair);
-        println!("bfind ndx={0:#?} mpair={1:#?}", ndx, &mpair);
+        //println!("bfind ndx={0:#?} mpair={1:#?}", ndx, &mpair);
         // capture close by items and score them.
         for icnt  in 0 .. look_out {
             let lndx = ndx - icnt.min(ndx);
@@ -374,7 +383,7 @@ pub mod reg_fit {
             let mut hpair = pairs[hndx];
             let loverlap = mpair.overlap(&lpair);
             let hoverlap = mpair.overlap(&hpair);
-            println!("loverlap={0:#?} hoverlap={1:#?}", &loverlap, &hoverlap);
+            //println!("loverlap={0:#?} hoverlap={1:#?}", &loverlap, &hoverlap);
             if loverlap < max_overlap {
                lpair.score = mpair.sim_score(lpair);
                sims.push(lpair.clone());
@@ -388,7 +397,7 @@ pub mod reg_fit {
         // Sort the candidates based on their matching scores
         sims.sort_by_key(|x| ((0.0 - (x.score * 10000000.0)) as i64));
         // and keep just the best matches 
-        println!("sims={0:#?}", &sims);
+        //println!("sims={0:#?}", &sims);
 
         //  Collect the best matching items that do not overlap
         // too much with either the main item or other higher
@@ -419,7 +428,7 @@ pub mod reg_fit {
                 }
             }
         }
-        println!("keepers={0:#?}", &tout);
+        //println!("keepers={0:#?}", &tout);
         return tout;
     }
 

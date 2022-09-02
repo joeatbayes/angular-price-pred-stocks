@@ -93,5 +93,19 @@ fn main() {
     let matches = rfit::build_similarity_matrix(&angles_for_all);
     println!("matches = {0:#?}", &matches);
 
+    // report that shows the keepers for each bar
+    // with basic stats.  What I want to see is if
+    // the keepers have clustering that is materially 
+    // different than the underlying base probability.
+    // if the therory holds true we should see this clustering.
+    
+
+    // Basic combination for the similar keepers.
+    // Need to know the base probability of bars rising and dropping.
+    // combine the rising bars based on keepers and falling bars based
+    // on keepers For each of these we can get a raw vote based 
+    // basic percentage.  What we really want is the basic probability
+    // less the base probability it is the differential as lift
+    // that represents something better.
 
 } // main
