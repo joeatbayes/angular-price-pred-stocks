@@ -71,7 +71,7 @@ pub mod reg_fit {
         pub fn sim_score(&self, cmp : BNDPair) -> f32 {
           let lscore = self.long_line.sim_score(cmp.long_line);
           let sscore = self.short_line.sim_score(cmp.short_line);
-          return (lscore + (sscore * 0.9)) / 2.0;
+          return (lscore + (sscore * 1.0)) / 2.0;
           //return lscore;
           //let adif = (180.0 + self.angle) - (180.0 + cmp.angle);
           //let asum = self.angle.abs() + cmp.angle.abs();
