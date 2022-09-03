@@ -11,8 +11,8 @@ pub mod matcher {
     // points for a set of angle pair.
 
     extern crate string_builder;
-    //use string_builder::Builder;
-    //use std::string::FromUtf8Error;
+    use string_builder::Builder;
+    use std::string::FromUtf8Error;
     //use crate::reg_fit::reg_fit as rfit;
     use crate::reg_fit::reg_fit::BNDPair;
 
@@ -72,9 +72,9 @@ pub mod matcher {
 
 
     pub fn get_similar(pairs : &Vec<BNDPair>, mpair : &BNDPair) -> Vec<BNDPair> {
-        let look_out = 200;
+        let look_out = 70;
         let max_overlap = 0.3;
-        let num_to_keep = 8;
+        let num_to_keep = 10;
         //let end_ndx = ndx + look_out;
         let last_ndx = pairs.len() -1;
         let mut sims : Vec<BNDPair> = Vec::new();
@@ -160,31 +160,66 @@ pub mod matcher {
 
      // produce a human friendly columnuar report showing
      // contents of all the BND Pairs
-     /*
      pub fn as_rep_string(dta : &Vec<BNDMatch>) -> Result<String, FromUtf8Error> {
         let mut b = Builder::default();
         let mut spc = 99;
-        for bpair in dta {
+
+        fn print_det(label : &String, pair : &BNDPair) -> String {
+            let sl = pair.short_line;
+            let ll = pair.long_line;
+            return format!("{label:6} {lslope:7.3}% {llen:5} {loffset:9.3} {lend:7} {sslope:7.3}% {slen:5} {soffset:9.3} {send:7} {angle:11.2} {drat:7.2}% {score:9.4}\n",
+                label = label, lslope=ll.sloper * 100.0,  llen=ll.num_ele, loffset=ll.offset, lend=ll.end_ndx,
+                sslope=sl.sloper * 100.0, slen=sl.num_ele, soffset=sl.offset, send=sl.end_ndx,
+                angle=pair.angle, drat=(pair.fp_dif_rat*100.0), score=pair.score);
+           
+        }
+
+        for bmatch in dta {
             spc += 1;
-            if spc > 50 {
+            if spc > 3 {
                 b.append("\n");
-                b.append("   long  long      long    long     short short     short    short intersect   fp dif\n");
-                b.append("  slope   len    offset     end     slope   len    offset      end     angle     Perc\n");
-                b.append("------- ----- --------- ------- --------- ------ -------- -------- ---------- -------\n");
+                b.append("           long  long      long    long    short short     short    short  intersect  fp dif      match\n");
+                b.append("          slope   len    offset     end    slope   len    offset      end      angle    Perc      score\n");
+                b.append("------ -------- ----- --------- ------- -------- ------ -------- -------- ---------- -------  ----------\n");
                 spc = 0;
             }
-            let sl = bpair.short_line;
-            let ll = bpair.long_line;
-            let lstr = format!("{lslope:8.5} {llen:5} {loffset:9.3} {lend:7} {sslope:9.5} {slen:5} {soffset:9.3} {send:7} {angle:9.2} {drat:7.2}%\n",
-                lslope=ll.sloper,  llen=ll.num_ele, loffset=ll.offset, lend=ll.end_ndx,
-                sslope=sl.sloper, slen=sl.num_ele, soffset=sl.offset, send=sl.end_ndx,
-                angle=bpair.angle, drat=(bpair.fp_dif_rat*100.0));
-            b.append(lstr)
+            let s = print_det(&"master".to_string(), &bmatch.master);
+            b.append(s);
+            let mut win_cnt = 0;
+            let mut loss_cnt= 0;
+            let mut win_tot = 0.0;
+            let mut loss_tot= 0.0;
+            for pair in &bmatch.matches {
+                let s = print_det(&" ..".to_string(), pair);
+                b.append(s);
+                if pair.fp_dif_rat > 0.0 {
+                   win_cnt += 1;
+                   win_tot += pair.fp_dif_rat;
+                } else {
+                   loss_cnt += 1;
+                   loss_tot += pair.fp_dif_rat;
+                }
+            } // for pair
+            let tot_cnt  = loss_cnt + win_cnt;
+            let win_avg  = win_tot / (win_cnt as f32);
+            let loss_avg = loss_tot / (loss_cnt as f32);
+            let win_rat  = (win_cnt as f32) / (tot_cnt as f32);
+            let loss_rat = (loss_cnt as f32)/ (tot_cnt as f32);
+            let win_net  = win_tot + loss_tot;
+            b.append(format!("         #win={0:2}  #loss={1:3} win={2:5.2}% loss={3:5.2}%\n",
+                win_cnt, loss_cnt, (win_rat*100.0), (loss_rat*100.0)));
+            b.append(format!("         tot_win= {0:7.2}% avg_win= {1:7.3}% net_P&L= {2:5.3}%\n",
+                 win_tot*100.0, win_avg*100.0, win_net*100.0));
+            b.append(format!("         tot_loss={0:7.2}% avg_loss{1:7.3}% \n",
+                  loss_tot*100.0, loss_avg*100.0 ));
+            //b.append(format!(""))
+            b.append("\n");
+        
+
         } // for
         return b.string();
         
     } // fn
-    */
 
 
 } // mod

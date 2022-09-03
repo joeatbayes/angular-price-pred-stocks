@@ -9,7 +9,7 @@ pub mod reg_fit {
     // repeat this process for a set subset of bars to allow 
     // bulk analysis.  The output of this pass is generally 
     // the primary input for angle_matcher::matcher
-    
+
     use crate::bar_parser::bar_parser as bars;
     //use crate::bar_parser::bar_parser as bars;
     use linreg::{linear_regression};
@@ -53,11 +53,13 @@ pub mod reg_fit {
       // based on how close the slope which is reduced by
       // how differnt the lengths of the lines are. 
       pub fn sim_score(&self, cmp : BestNumDayFit) -> f32 {
-        let ssim = 1000.0 - (self.sloper - cmp.sloper);
-        let num_ele_dif = (self.num_ele - cmp.num_ele).abs();
-        let num_ele_rat = num_ele_dif as f32 / self.num_ele as f32;
-        let num_ele_score = 1.0 - num_ele_rat;
-        return ssim * num_ele_score // reduce angle score so larger # of ele difference reduces score even more  }
+        let ssim = 5.0 - ((2.0 + self.sloper) - (2.0 + cmp.sloper));
+        //let num_ele_dif = (self.num_ele - cmp.num_ele).abs();
+        //let num_ele_rat = num_ele_dif as f32 / (self.num_ele + cmp.num_ele) as f32;
+        //let num_ele_score = 1.0 - (num_ele_rat * 0.3);
+        //return ssim * num_ele_score // reduce angle score so larger # of ele difference reduces score even more  }
+         
+        return ssim;
       }
     }
 
@@ -69,7 +71,12 @@ pub mod reg_fit {
         pub fn sim_score(&self, cmp : BNDPair) -> f32 {
           let lscore = self.long_line.sim_score(cmp.long_line);
           let sscore = self.short_line.sim_score(cmp.short_line);
-          return lscore + (sscore * 0.3);
+          return (lscore + (sscore * 0.9)) / 2.0;
+          //return lscore;
+          //let adif = (180.0 + self.angle) - (180.0 + cmp.angle);
+          //let asum = self.angle.abs() + cmp.angle.abs();
+          //let arat = (adif / asum)*2.0;
+          //return lscore * (1.0 - (arat * 2.8)); 
         } 
 
         // compute a similarity score between two BNDpair based
@@ -272,7 +279,7 @@ pub mod reg_fit {
         let bf2 = find_best_fit_in_range(&pbars, long_start_ndx, min_long_ele,  max_long_ele); 
         //println!("from best fit long  function bfl={0:#?}", bf2);
 
-        let look_forward_bars = 3;
+        let look_forward_bars = 2;
         let fut_price_ndx = (last_bar_ndx + look_forward_bars).min((pbars.len() ) -1);
         let curr_price = pbars.close[last_bar_ndx];
         let fut_price = pbars.close[fut_price_ndx];
@@ -299,6 +306,7 @@ pub mod reg_fit {
     // of those those for all data points except those too early in 
     // the data set to have valid trend lines.
     pub fn build_fit_angles(pbars : &bars::Bars, min_short :  i32, max_short : i32 ) -> Vec<BNDPair> {
+       
        let mut tout : Vec<BNDPair> = Vec::new();
        let first_ndx = max_short * 2;
        let last_ndx = (pbars.len() as i32) - 1;

@@ -1,0 +1,8 @@
+TODO: In predictor::reg_fit::build_fit_angles()
+  Use config to allow us to skip some bars in the 
+  input data set.  EG: It may not be valuable to 
+  include bars from 15 years ago when the trading regime
+  was quite different to predict current price movements.
+
+
+ 

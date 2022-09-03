@@ -31,13 +31,13 @@ Bayesian math, random permutation optimization.
 ------------------------
 Key Repository Files:
 ------------------------    
-•	Main Code entry point: 
+•   Main Code entry point: 
         https://github.com/joeatbayes/angular-price-pred-stocks/blob/main/predictor/src/main.rs
 
-•	Main regression application & similarity scoring: 
+•   Main regression application & similarity scoring: 
         https://github.com/joeatbayes/angular-price-pred-stocks/blob/main/predictor/src/reg_fit.rs
 
-•	Bars Parser / CSV: 
+•   Bars Parser / CSV: 
         https://github.com/joeatbayes/angular-price-pred-stocks/blob/main/predictor/src/bar_parser.rs
 
 •   K Nearest Neighbor Matching using binary search
@@ -99,7 +99,36 @@ Sample from basic Stats for underlying bar file
 -----------------------------------------
 Sample from K Nearest Neighbor matching 
 -----------------------------------------
- -- TODO
+        long  long      long    long     short short     short    short intersect   fp dif      match
+        slope   len    offset     end     slope   len    offset      end     angle     Perc      score
+    ------ ----- ----- --------- ------- --------- ------ -------- -------- ---------- -------  ----------
+    master  0.00436    30   111.472    4728  -0.00105    10   126.423    4738    -33.73   -2.39%    0.0000
+    ..     0.00435    31    76.510    4090   0.00971    10    83.738    4100     21.62   -1.97%    0.9548
+    ..     0.00530    47   239.832    6877   0.00737    14   290.090    6891     13.48    4.11%    0.9543
+    ..     0.00558    30    87.831    4168   0.00695     9    97.460    4177      7.70   -3.44%    0.9542
+    ..     0.00490    30    80.192    2466   0.00678     9    87.041    2475      9.06    0.92%    0.9538
+    ..     0.00450    33   110.706    2089   0.00515    11   123.508    2100      6.32   -3.34%    0.9529
+    ..     0.00428    31   241.105    6553   0.00373    10   268.018    6563     -0.59    0.02%    0.9521
+    ..     0.00468    31    83.268    2417   0.00221     9    88.743    2426    -10.59   -5.77%    0.9516
+    ..     0.00563    27    73.511    1088   0.00107     9    84.159    1097    -17.28    2.22%    0.9516
+    ..     0.00569    36    97.362    1471  -0.00041    10   118.203    1481    -32.12   -4.11%    0.9510
+            #win= 4  #loss=  5 win=44.44% loss=55.56%
+            tot_win=    7.27% avg_win=   1.817% net_P&L= -11.371%
+            tot_loss= -18.64% avg_loss -3.728%
+
+    master  0.00437    34   113.119    2097  -0.00591     9   133.024    2106    -64.41    0.67%    0.0000
+    ..     0.00435    31    76.510    4090   0.00971    10    83.738    4100     21.62   -1.97%    0.9570
+    ..     0.00530    47   239.832    6877   0.00737    14   290.090    6891     13.48    4.11%    0.9564
+    ..     0.00558    30    87.831    4168   0.00695     9    97.460    4177      7.70   -3.44%    0.9564
+    ..     0.00490    30    80.192    2466   0.00678     9    87.041    2475      9.06    0.92%    0.9560
+    ..     0.00428    31   241.105    6553   0.00373    10   268.018    6563     -0.59    0.02%    0.9543
+    ..     0.00468    31    83.268    2417   0.00221     9    88.743    2426    -10.59   -5.77%    0.9538
+    ..     0.00563    27    73.511    1088   0.00107     9    84.159    1097    -17.28    2.22%    0.9538
+    ..     0.00496    27   110.727    4725   0.00087     9   124.327    4734    -22.99   -2.04%    0.9533
+    ..     0.00569    36    97.362    1471  -0.00003    11   117.974    1482    -29.49   -0.17%    0.9533
+            #win= 4  #loss=  5 win=44.44% loss=55.56%
+            tot_win=    7.27% avg_win=   1.817% net_P&L= -6.132%
+            tot_loss= -13.40% avg_loss -2.680%
 
 
 
