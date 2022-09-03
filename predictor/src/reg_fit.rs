@@ -53,7 +53,7 @@ pub mod reg_fit {
       // based on how close the slope which is reduced by
       // how differnt the lengths of the lines are. 
       pub fn sim_score(&self, cmp : BestNumDayFit) -> f32 {
-        let ssim = 5.0 - ((2.0 + self.sloper) - (2.0 + cmp.sloper));
+        let ssim = 20.0 - ((10.0 + self.sloper) - (10.0 + cmp.sloper));
         //let num_ele_dif = (self.num_ele - cmp.num_ele).abs();
         //let num_ele_rat = num_ele_dif as f32 / (self.num_ele + cmp.num_ele) as f32;
         //let num_ele_score = 1.0 - (num_ele_rat * 0.3);
@@ -271,15 +271,15 @@ pub mod reg_fit {
         //println!("from best fit short function bfl={0:#?}", bfl);
 
         let long_start_ndx = (last_bar_ndx - bfl.num_ele as usize) as usize;
-        let min_long_ele=  bfl.num_ele * 3;
-        let max_long_ele = min_long_ele * 4;
+        let min_long_ele=  ((bfl.num_ele as f32) * 3.0) as i32;
+        let max_long_ele = ((min_long_ele as f32) * 1.2) as i32;
         
         //min_long_ele = cmp::max(60,min_long_ele );
         //println!("min_long_ele={0:#?}  max_long_ele={1:#?}", min_long_ele,max_long_ele );
         let bf2 = find_best_fit_in_range(&pbars, long_start_ndx, min_long_ele,  max_long_ele); 
         //println!("from best fit long  function bfl={0:#?}", bf2);
 
-        let look_forward_bars = 2;
+        let look_forward_bars = 3;
         let fut_price_ndx = (last_bar_ndx + look_forward_bars).min((pbars.len() ) -1);
         let curr_price = pbars.close[last_bar_ndx];
         let fut_price = pbars.close[fut_price_ndx];

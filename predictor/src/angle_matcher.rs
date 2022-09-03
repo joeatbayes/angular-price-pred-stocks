@@ -102,7 +102,7 @@ pub mod matcher {
         } // for icnt
 
         // Sort the candidates based on their matching scores
-        sims.sort_by_key(|x| ((0.0 - (x.score * 10000000.0)) as i64));
+        sims.sort_by_key(|x| ((0.0 - (x.score * 100000.0)) as i64));
         // and keep just the best matches 
         //println!("sims={0:#?}", &sims);
 
@@ -154,6 +154,7 @@ pub mod matcher {
             };
             tout.push(matched);
         } // for mpair
+        tout.sort_by_key(|x| (x.master.short_line.end_ndx));
         return tout;
     } // fn
 
