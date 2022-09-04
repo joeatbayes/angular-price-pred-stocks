@@ -43,9 +43,6 @@ pub mod reg_fit {
         pub fp_dif_rat : f32,
         pub score: f32 // used after matching process 
     }
-
-
-
     
 
     impl BestNumDayFit {
@@ -305,11 +302,10 @@ pub mod reg_fit {
     // shorter change line creating pair of lines and return a vector
     // of those those for all data points except those too early in 
     // the data set to have valid trend lines.
-    pub fn build_fit_angles(pbars : &bars::Bars, min_short :  i32, max_short : i32 ) -> Vec<BNDPair> {
+    pub fn build_fit_angles(pbars : &bars::Bars,first_ndx : i32, last_ndx : i32, min_short :  i32, max_short : i32 ) -> Vec<BNDPair> {
        
        let mut tout : Vec<BNDPair> = Vec::new();
-       let first_ndx = max_short * 2;
-       let last_ndx = (pbars.len() as i32) - 1;
+      
        for last_bar_ndx in  first_ndx .. last_ndx {
            //println!("last_bar_ndx={0:#?}, ", last_bar_ndx);
            let bfa = best_fit_angle(&pbars, last_bar_ndx as usize, min_short, max_short);

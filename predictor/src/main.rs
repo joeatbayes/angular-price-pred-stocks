@@ -71,11 +71,18 @@ fn main() {
     //  of bars long. 
     //let bpair =  rfit::best_fit_angle(&pbars, 500, 12, 60);
     //println!("bpair={0:#?}", bpair);
+    let min_short = 25;
+    let max_short = 30;
+    let port_set_for_train = 0.85;
+    let port_set_for_testing = 1.0 - port_set_for_train;
+    let first_ndx = max_short * 2;
+    let last_ndx = ((pbars.len() as f32) * port_set_for_train) as i32; //
+    let angles_for_all = rfit::build_fit_angles(
+          &pbars, first_ndx, last_ndx, 
+          min_short, max_short);
+    
 
-    let angles_for_all = rfit::build_fit_angles(&pbars, 25,30);
     //print!("angles_for_all={0:#?}", angles_for_all);
-
-
     // find the set of bpair which are most similar by score
     // skipping those that overlap with an existing item by 
     // more than 20% of all underlying samples. 

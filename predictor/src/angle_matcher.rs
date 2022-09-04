@@ -207,12 +207,14 @@ pub mod matcher {
             let win_rat  = (win_cnt as f32) / (tot_cnt as f32);
             let loss_rat = (loss_cnt as f32)/ (tot_cnt as f32);
             let win_net  = win_tot + loss_tot;
-            b.append(format!("         #win={0:2}  #loss={1:3} win={2:5.2}% loss={3:5.2}%\n",
-                win_cnt, loss_cnt, (win_rat*100.0), (loss_rat*100.0)));
+            let avg_net  = win_net / (tot_cnt as f32);
+            let appt =   (win_rat * win_avg) - (loss_rat.abs() * loss_avg  );
+            b.append(format!("         #win={0:2}  #loss= {1:3} winRat= {2:5.2}% lossRat={3:5.2}% avg_net= {4:5.4}%\n",
+                win_cnt, loss_cnt, (win_rat*100.0), (loss_rat*100.0), (avg_net*100.0)));
             b.append(format!("         tot_win= {0:7.2}% avg_win= {1:7.3}% net_P&L= {2:5.3}%\n",
                  win_tot*100.0, win_avg*100.0, win_net*100.0));
-            b.append(format!("         tot_loss={0:7.2}% avg_loss{1:7.3}% \n",
-                  loss_tot*100.0, loss_avg*100.0 ));
+            b.append(format!("         tot_loss= {0:7.2}% avg_loss= {1:7.3}% appt= {2:5.2}% \n",
+                  loss_tot*100.0, loss_avg*100.0, appt*100.0 ));
             //b.append(format!(""))
             b.append("\n");
         
