@@ -3,6 +3,7 @@ pub mod reg_fit;
 pub mod angle_matcher;
 pub mod back_test;
 pub mod trade;
+pub mod settings;
 
 use crate::bar_parser::bar_parser as bars;
 use crate::angle_matcher::matcher as matcher;
@@ -10,6 +11,9 @@ use crate::reg_fit::reg_fit as rfit;
 use crate::back_test::back_test as btest;
 use crate::trade::trade as trades;
 use linreg::{linear_regression};
+use crate::settings::settings::Config as config;
+
+
 //use sysinfo::SystemExt::System;
 //use sysinfo::Process;
 
@@ -47,6 +51,7 @@ fn test_find_short_long_best_fit(pbars : &bars::Bars) {
 fn main() {
     //let mut system = System::new();
     //system.refresh_all();
+    let cfg = config::default();
 
     //let pbars = bars::read_file(&"../data/bars/SPY.csv");
     let pbars = bars::read_file(&"../data/bars/RSP.csv");
@@ -89,7 +94,7 @@ fn main() {
     let last_train_ndx = first_test_ndx -1;
 
     let angles_for_all = rfit::build_fit_angles(
-          &pbars, first_train_ndx, last_train_ndx, 
+          &cfg, &pbars, first_train_ndx, last_train_ndx, 
           min_short, max_short);
     
     let num_test_bars = last_test_ndx - first_test_ndx;
@@ -118,7 +123,7 @@ fn main() {
     //let rep_str = rfit::as_rep_string(&angles_for_all).unwrap();
     //println!("{0}", rep_str);
 
-    let matches = matcher::build_similarity_matrix(&angles_for_all);
+    let matches = matcher::build_similarity_matrix(&cfg, &angles_for_all);
     //println!("matches = {0:#?}", &matches);
 
     // report that shows the keepers for each bar
@@ -126,7 +131,7 @@ fn main() {
     // the keepers have clustering that is materially 
     // different than the underlying base probability.
     // if the therory holds true we should see this clustering.
-    let rep_str = matcher::as_rep_string(&matches).unwrap();
+    let rep_str = matcher::as_rep_string(&cfg, &matches).unwrap();
     println!("{0}", rep_str);
 
     // Basic combination for the similar keepers.
@@ -144,12 +149,12 @@ fn main() {
     // usage for this process from Struct sysinfo::Process
     // https://tikv.github.io/doc/sysinfo/index.html
 
-    let trades = btest::back_test(&angles_for_all,&pbars,first_test_ndx as usize , 
+    let trades = btest::back_test(&cfg, &angles_for_all,&pbars,first_test_ndx as usize , 
         last_test_ndx as usize,  min_short, max_short);
     let tstats = btest::trade_stats(&trades);
     println!("btr={0:#?}", &trades);
     println!("trade stats={0:#?}", &tstats);
-    println!("base stats simple hold N days={0:#?}",  pbars.trade_stats_simple_hold( 15, first_test_ndx as usize,last_test_ndx as usize));
+    println!("base stats simple hold N days={0:#?}",  pbars.trade_stats_simple_hold(&cfg, first_test_ndx as usize,last_test_ndx as usize));
     println!("number of test_bar={0:#?}  # train bar={1:#?}", num_test_bars, num_train_bars);
 
 

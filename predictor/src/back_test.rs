@@ -9,6 +9,7 @@ pub mod back_test {
     use crate::reg_fit::reg_fit as rfit;
     use crate::angle_matcher::matcher::safe_div;
     use crate::trade::trade::TradeStats;
+    use crate::settings::settings::Config as config;
 
     #[derive(Debug, Copy, Clone)]
     pub struct Trade {
@@ -74,11 +75,11 @@ pub mod back_test {
     //     most likely by passing in a function pointer to the decision 
     //     maker so we can re-use backtest with many derivatives to 
     //     core logic.
-    pub fn back_test(pairs : &Vec<BNDPair>,pbars : &bars::Bars, first_ndx : usize, last_ndx : usize, min_short : i32, max_short : i32) -> Vec<Trade> {
+    pub fn back_test(cfg : &config, pairs : &Vec<BNDPair>,pbars : &bars::Bars, first_ndx : usize, last_ndx : usize, min_short : i32, max_short : i32) -> Vec<Trade> {
         let start_cap = 10000.0;     
         //let mut buy_ndx = 0;
         //let mut buy_price = 0;
-        let hold_bars = 15;
+        let hold_bars = cfg.hold_bars as usize;
         // This backtest is based on a simple premis of choose when to buy and always sell
         // at close hold_bars latter.   A better strategy may be to hold until the buy 
         // signal goes away or for hold_bars whichever is latter.
@@ -95,8 +96,8 @@ pub mod back_test {
         let mut trades : Vec<Trade> = Vec::new();
         for ndx in  first_ndx .. max_ndx {
             //println!("last_bar_ndx={0:#?}, ", last_bar_ndx);            
-            let bpair = rfit::best_fit_angle(&pbars, ndx as usize, min_short, max_short);
-            let matches = matcher::get_matches(pairs, &bpair); // find the set of angles that best match the current pair
+            let bpair = rfit::best_fit_angle(cfg, &pbars, ndx as usize, min_short, max_short);
+            let matches = matcher::get_matches(cfg,pairs, &bpair); // find the set of angles that best match the current pair
             let ms = matcher::match_stats(&matches);
             // don't have a trade open so check to see if we wanto to buy something.
             if (ms.appt > min_appt_for_buy && ms.win_rat > min_win_rat_for_buy 

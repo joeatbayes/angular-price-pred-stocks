@@ -43,9 +43,13 @@ Key Repository Files:
 •   K Nearest Neighbor Matching using binary search
         https://github.com/joeatbayes/angular-price-pred-stocks/blob/main/predictor/src/angle_matcher.rs
 
+•   Back test logic for simple trading test against classifier
+        https://github.com/joeatbayes/angular-price-pred-stocks/blob/main/predictor/src/back_test.rs 
+
 •   Config file for default settings of magic constants like how many bars to harvest
     how many neighbors to consider in initial harvest.  How many neighbors to keep, etc.
          https://github.com/joeatbayes/angular-price-pred-stocks/blob/main/predictor/src/config.rs
+
 
 •   Optimizer seeking to find best look forward and minimum short trend line
     lengths.
@@ -82,7 +86,20 @@ Sample from the Initial Linear Regression slope fitting for SPY
 -----------------------------------------------
 Sample from basic Stats for underlying bar file
 -----------------------------------------------
--- TODO
+    base stats simple hold N days=TradeStats {
+        win_tot: 803.7904,
+        win_cnt: 202,
+        win_rat: 0.55342466,
+        win_avg: 3.9791603,
+        loss_cnt: 163,
+        loss_tot: -851.67004,
+        loss_rat: 0.44657534,
+        loss_avg: 5.2249694,
+        net_tot: -47.87964,
+        net_avg: -0.1311771,
+        appt: -0.13117719,
+    }
+    number of test_bar=365  # train bar=4444
 
 ---------------------------------------------
 -- Sample from KNN Matching win loss analysis
@@ -94,6 +111,20 @@ Sample from basic Stats for underlying bar file
   -- amount that would have been one if every match had been
   -- traded versus total amount lost if every match had been
   -- traded.   
+  
+        trade stats=TradeStats {
+            win_tot: 623.3998,
+            win_cnt: 12,
+            win_rat: 0.5714286,
+            win_avg: 51.94998,
+            loss_cnt: 9,
+            loss_tot: -430.50012,
+            loss_rat: 0.42857143,
+            loss_avg: 47.833347,
+            net_tot: 192.89966,
+            net_avg: 9.185698,
+            appt: 9.185699,
+        }
 
 
 -----------------------------------------

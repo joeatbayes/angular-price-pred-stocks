@@ -16,6 +16,9 @@ pub mod matcher {
     //use crate::reg_fit::reg_fit as rfit;
     use crate::reg_fit::reg_fit::BNDPair;
     use crate::trade::trade::TradeStats;
+    use crate::trade::trade as trades;
+    use crate::settings::settings::Config as config;
+
 
     // Store the set of pairs most similiar to the
     // master pair.  The matches are listed in most
@@ -73,10 +76,10 @@ pub mod matcher {
 
    
 
-    pub fn get_similar(pairs : &Vec<BNDPair>, mpair : &BNDPair) -> Vec<BNDPair> {
-        let look_out = 70;
-        let max_overlap = 0.3;
-        let num_to_keep = 10;
+    pub fn get_similar(cfg : &config, pairs : &Vec<BNDPair>, mpair : &BNDPair) -> Vec<BNDPair> {
+        let look_out = cfg.knn_look_out;
+        let max_overlap = cfg.knn_max_overlap;
+        let num_to_keep = cfg.knn_num_to_keep;
         //let end_ndx = ndx + look_out;
         let last_ndx = pairs.len() -1;
         let mut sims : Vec<BNDPair> = Vec::new();
@@ -141,8 +144,8 @@ pub mod matcher {
         return tout;
     }
 
-    pub fn get_matches(pairs : &Vec<BNDPair>, mpair : &BNDPair)  -> BNDMatch {
-      let sims = get_similar(pairs, mpair);
+    pub fn get_matches(cfg : &config, pairs : &Vec<BNDPair>, mpair : &BNDPair)  -> BNDMatch {
+      let sims = get_similar(cfg, pairs, mpair);
       return  BNDMatch {
           master : mpair.clone(),
           matches : sims
@@ -153,10 +156,10 @@ pub mod matcher {
     // This could run into-excess memory usage 
     // if we try to store all of them due to the copy
     // behavior of rust.      
-    pub fn build_similarity_matrix(pairs : &Vec<BNDPair>) -> Vec<BNDMatch> {
+    pub fn build_similarity_matrix(cfg : &config, pairs : &Vec<BNDPair>) -> Vec<BNDMatch> {
         let mut tout : Vec<BNDMatch> = Vec::new();
         for mpair in pairs {
-            let matched = get_matches(pairs, &mpair);
+            let matched = get_matches(cfg, pairs, &mpair);
             tout.push(matched);
         } // for mpair
         tout.sort_by_key(|x| (x.master.short_line.end_ndx));
@@ -189,38 +192,16 @@ pub mod matcher {
                 loss_tot += pair.fp_dif_rat;
             } // else
         } // for pair
-        let tot_cnt  = loss_cnt + win_cnt;
-        let win_avg  = safe_div(win_tot, win_cnt as f32, 0.0);
-        let loss_avg = safe_div(loss_tot, loss_cnt as f32, 0.0);
-        let win_rat  = safe_div(win_cnt as f32, tot_cnt as f32, 0.0);
-        let loss_rat = safe_div(loss_cnt as f32, tot_cnt as f32, 0.0);
-        let win_net  = win_tot + loss_tot;
-        let avg_net  = safe_div(win_net, tot_cnt as f32, 0.0);
-        let appt =   (win_rat * win_avg) - (loss_rat.abs() * loss_avg.abs());
-
-        
-        return TradeStats { 
-            win_tot : win_tot,
-            win_cnt : win_cnt,
-            win_rat : win_rat,
-            win_avg : win_avg,
-            loss_tot : loss_tot,
-            loss_cnt : loss_cnt,
-            loss_rat : loss_rat.abs(),
-            loss_avg : loss_avg.abs(),
-            net_tot  : win_net,
-            net_avg  : avg_net,
-            appt     : appt
-          }
+        return trades::make_trade_stats(win_cnt, win_tot, loss_cnt, loss_tot);
     }
 
 
      // produce a human friendly columnuar report showing
      // contents of all the BND Pairs
-     pub fn as_rep_string(dta : &Vec<BNDMatch>) -> Result<String, FromUtf8Error> {
+     pub fn as_rep_string(cfg : &config, dta : &Vec<BNDMatch>) -> Result<String, FromUtf8Error> {
         let mut b = Builder::default();
         let mut spc = 99;
-
+        println!("hold bars = {0:#?}", cfg.hold_bars);
         fn print_det(label : &String, pair : &BNDPair) -> String {
             let sl = pair.short_line;
             let ll = pair.long_line;

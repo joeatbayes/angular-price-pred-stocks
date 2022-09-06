@@ -6,6 +6,8 @@ pub mod bar_parser {
     use std::io::{self, BufRead};
     use std::path::Path;
     use crate::trade::trade as trade;
+    use crate::settings::settings::Config as config;
+
     //use num_traits::cast::ToPrimitive;
     //use std::collections::HashMap;
 
@@ -81,7 +83,7 @@ pub mod bar_parser {
         }
 
         
-        pub fn trade_stats_simple_hold(&self, hold_bars : i32, pstart_ndx : usize, pend_ndx : usize) -> trade::TradeStats {
+        pub fn trade_stats_simple_hold(&self, cfg : &config, pstart_ndx : usize, pend_ndx : usize) -> trade::TradeStats {
             let mut win_cnt = 0;
             let mut loss_cnt= 0;
             let mut win_tot = 0.0;
@@ -89,7 +91,7 @@ pub mod bar_parser {
             let start_ndx = pstart_ndx.max(0) as usize;
             let end_ndx = pend_ndx.min(self.len() -1) as usize;
             for ndx in start_ndx .. end_ndx {
-                let sell_ndx = (ndx + hold_bars as usize).min(end_ndx);
+                let sell_ndx = (ndx + cfg.hold_bars as usize).min(end_ndx);
                 let buy_price = self.close[ndx];
                 let sell_price= self.close[sell_ndx];
                 let net = sell_price - buy_price;  

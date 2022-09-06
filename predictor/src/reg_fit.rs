@@ -16,6 +16,7 @@ pub mod reg_fit {
     extern crate string_builder;
     use string_builder::Builder;
     use std::string::FromUtf8Error;
+    use crate::settings::settings::Config as config;
 
     // Stores a single line description developed from 
     // multiple linear regression passes over a base set
@@ -262,7 +263,7 @@ pub mod reg_fit {
     // the longest line with the lowest error average from the 
     // regression line the data points. Calculate the angle of 
     // those lines and return both the BNDpair structure.
-    pub fn best_fit_angle(pbars : &bars::Bars, last_bar_ndx : usize, min_short : i32, max_short : i32) -> BNDPair {
+    pub fn best_fit_angle(cfg : &config, pbars : &bars::Bars, last_bar_ndx : usize, min_short : i32, max_short : i32) -> BNDPair {
         // find the longer line
         let bfl = find_best_fit_in_range(&pbars, last_bar_ndx, min_short,  max_short); 
         //println!("from best fit short function bfl={0:#?}", bfl);
@@ -276,7 +277,7 @@ pub mod reg_fit {
         let bf2 = find_best_fit_in_range(&pbars, long_start_ndx, min_long_ele,  max_long_ele); 
         //println!("from best fit long  function bfl={0:#?}", bf2);
 
-        let look_forward_bars = 15;
+        let look_forward_bars = cfg.hold_bars as usize;
         let fut_price_ndx = (last_bar_ndx + look_forward_bars).min((pbars.len() ) -1);
         let curr_price = pbars.close[last_bar_ndx];
         let fut_price = pbars.close[fut_price_ndx];
@@ -302,13 +303,13 @@ pub mod reg_fit {
     // shorter change line creating pair of lines and return a vector
     // of those those for all data points except those too early in 
     // the data set to have valid trend lines.
-    pub fn build_fit_angles(pbars : &bars::Bars,first_ndx : usize, last_ndx : usize, min_short :  i32, max_short : i32 ) -> Vec<BNDPair> {
+    pub fn build_fit_angles(cfg : &config, pbars : &bars::Bars,first_ndx : usize, last_ndx : usize, min_short :  i32, max_short : i32 ) -> Vec<BNDPair> {
        
        let mut tout : Vec<BNDPair> = Vec::new();
       
        for last_bar_ndx in  first_ndx .. last_ndx {
            //println!("last_bar_ndx={0:#?}, ", last_bar_ndx);
-           let bfa = best_fit_angle(&pbars, last_bar_ndx as usize, min_short, max_short);
+           let bfa = best_fit_angle(cfg, &pbars, last_bar_ndx as usize, min_short, max_short);
            //println!("last_bar_ndx={0:#?}, bfa={1:#?}", last_bar_ndx, bfa);
            tout.push(bfa);
        }   
