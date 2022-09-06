@@ -1,8 +1,24 @@
+TODO: Only use first X% of bars for initial analysis
+  write a simple back tester looking for win% > 70%
+  and net_P&L > 1%.  This also requires moving the stats
+  computation out into a function producing a stats data 
+  package so we can use it in the back trace. 
+
+TODO: I don't think the algorithm we are using for the BestNumDayFit::sim_score
+   is quite right.  I think we need to instead measure the  sqrt of sum of the 
+   sq root of the difference between the lines converted into average per line
+   point. It still looks like the contribution from short slope is not right
+   because it should be dominating the score sort and scores furthest from
+   short slope seem to dominate. 
+
 TODO: In predictor::reg_fit::build_fit_angles()
-  Use config to allow us to skip some bars in the 
-  input data set.  EG: It may not be valuable to 
-  include bars from 15 years ago when the trading regime
-  was quite different to predict current price movements.
+   Use config to allow us to skip some bars in the 
+   input data set.  EG: It may not be valuable to 
+   include bars from 15 years ago when the trading regime
+   was quite different to predict current price movements.
+
+TODO:  Implement lower level unit tests so we can better isolate
+   where problems exist.
 
 
  

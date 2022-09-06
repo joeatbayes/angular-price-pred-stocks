@@ -5,6 +5,7 @@ pub mod bar_parser {
     use std::fs::File;
     use std::io::{self, BufRead};
     use std::path::Path;
+    use crate::trade::trade as trade;
     //use num_traits::cast::ToPrimitive;
     //use std::collections::HashMap;
 
@@ -16,6 +17,7 @@ pub mod bar_parser {
         Ok(io::BufReader::new(file).lines())
     }
 
+ 
   
     #[derive(Debug)]
     pub struct Bars { 
@@ -78,8 +80,37 @@ pub mod bar_parser {
             return &self.close[startn..endn];
         }
 
+        
+        pub fn trade_stats_simple_hold(&self, hold_bars : i32, pstart_ndx : usize, pend_ndx : usize) -> trade::TradeStats {
+            let mut win_cnt = 0;
+            let mut loss_cnt= 0;
+            let mut win_tot = 0.0;
+            let mut loss_tot= 0.0;
+            let start_ndx = pstart_ndx.max(0) as usize;
+            let end_ndx = pend_ndx.min(self.len() -1) as usize;
+            for ndx in start_ndx .. end_ndx {
+                let sell_ndx = (ndx + hold_bars as usize).min(end_ndx);
+                let buy_price = self.close[ndx];
+                let sell_price= self.close[sell_ndx];
+                let net = sell_price - buy_price;  
+                if net > 0.0 {
+                    //println!("profitable");
+                    win_cnt += 1;
+                    win_tot += net;
+                } else {
+                    //println!("not profitable");
+                    loss_cnt += 1;
+                    loss_tot += net;
+                } // else
+            } // for pair
+            //println!("win_cnt={0:#?} win_tot={1:#?}", win_cnt, win_tot);
+            return trade::make_trade_stats(win_cnt, win_tot, loss_cnt, loss_tot);
+        } // fn
+         
 
-    }
+
+    } // impl
+   
 
 
 

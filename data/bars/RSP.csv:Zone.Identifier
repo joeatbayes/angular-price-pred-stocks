@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://finance.yahoo.com/quote/RSP/history?p=RSP
+HostUrl=https://query1.finance.yahoo.com/v7/finance/download/RSP?period1=1051747200&period2=1662336000&interval=1d&events=history&includeAdjustedClose=true

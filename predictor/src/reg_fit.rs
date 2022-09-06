@@ -276,7 +276,7 @@ pub mod reg_fit {
         let bf2 = find_best_fit_in_range(&pbars, long_start_ndx, min_long_ele,  max_long_ele); 
         //println!("from best fit long  function bfl={0:#?}", bf2);
 
-        let look_forward_bars = 3;
+        let look_forward_bars = 15;
         let fut_price_ndx = (last_bar_ndx + look_forward_bars).min((pbars.len() ) -1);
         let curr_price = pbars.close[last_bar_ndx];
         let fut_price = pbars.close[fut_price_ndx];
@@ -302,7 +302,7 @@ pub mod reg_fit {
     // shorter change line creating pair of lines and return a vector
     // of those those for all data points except those too early in 
     // the data set to have valid trend lines.
-    pub fn build_fit_angles(pbars : &bars::Bars,first_ndx : i32, last_ndx : i32, min_short :  i32, max_short : i32 ) -> Vec<BNDPair> {
+    pub fn build_fit_angles(pbars : &bars::Bars,first_ndx : usize, last_ndx : usize, min_short :  i32, max_short : i32 ) -> Vec<BNDPair> {
        
        let mut tout : Vec<BNDPair> = Vec::new();
       

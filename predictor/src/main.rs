@@ -1,9 +1,14 @@
 pub mod bar_parser;
 pub mod reg_fit;
 pub mod angle_matcher;
+pub mod back_test;
+pub mod trade;
+
 use crate::bar_parser::bar_parser as bars;
 use crate::angle_matcher::matcher as matcher;
 use crate::reg_fit::reg_fit as rfit;
+use crate::back_test::back_test as btest;
+use crate::trade::trade as trades;
 use linreg::{linear_regression};
 //use sysinfo::SystemExt::System;
 //use sysinfo::Process;
@@ -43,7 +48,8 @@ fn main() {
     //let mut system = System::new();
     //system.refresh_all();
 
-    let pbars = bars::read_file(&"../data/bars/SPY.csv");
+    //let pbars = bars::read_file(&"../data/bars/SPY.csv");
+    let pbars = bars::read_file(&"../data/bars/RSP.csv");
     //println!("pbars={0:#?}", pbars);
 
     // TODO: change this so slice asks for columns by enum
@@ -71,16 +77,23 @@ fn main() {
     //  of bars long. 
     //let bpair =  rfit::best_fit_angle(&pbars, 500, 12, 60);
     //println!("bpair={0:#?}", bpair);
-    let min_short = 25;
-    let max_short = 30;
-    let port_set_for_train = 0.85;
-    let port_set_for_testing = 1.0 - port_set_for_train;
-    let first_ndx = max_short * 2;
-    let last_ndx = ((pbars.len() as f32) * port_set_for_train) as i32; //
+    let min_short =20;
+    let max_short =30;
+    let port_set_for_test = 0.55;
+    let max_test_size = 365 as usize;
+    let num_test_ele = ((pbars.len() as f32 * port_set_for_test) as usize).min(max_test_size);
+    let num_tran_ele =  (pbars.len() - num_test_ele) -1; 
+    let first_test_ndx = (pbars.len() - num_test_ele) -1;
+    let last_test_ndx = (pbars.len() - 1) as usize;
+    let first_train_ndx = (max_short * 2) as usize;
+    let last_train_ndx = first_test_ndx -1;
+
     let angles_for_all = rfit::build_fit_angles(
-          &pbars, first_ndx, last_ndx, 
+          &pbars, first_train_ndx, last_train_ndx, 
           min_short, max_short);
     
+    let num_test_bars = last_test_ndx - first_test_ndx;
+    let num_train_bars = last_train_ndx - first_train_ndx;
 
     //print!("angles_for_all={0:#?}", angles_for_all);
     // find the set of bpair which are most similar by score
@@ -130,6 +143,14 @@ fn main() {
     // TODO:  exended this to print data process runtime and memory
     // usage for this process from Struct sysinfo::Process
     // https://tikv.github.io/doc/sysinfo/index.html
+
+    let trades = btest::back_test(&angles_for_all,&pbars,first_test_ndx as usize , 
+        last_test_ndx as usize,  min_short, max_short);
+    let tstats = btest::trade_stats(&trades);
+    println!("btr={0:#?}", &trades);
+    println!("trade stats={0:#?}", &tstats);
+    println!("base stats simple hold N days={0:#?}",  pbars.trade_stats_simple_hold( 15, first_test_ndx as usize,last_test_ndx as usize));
+    println!("number of test_bar={0:#?}  # train bar={1:#?}", num_test_bars, num_train_bars);
 
 
 } // main

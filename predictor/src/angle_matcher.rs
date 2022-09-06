@@ -15,6 +15,7 @@ pub mod matcher {
     use std::string::FromUtf8Error;
     //use crate::reg_fit::reg_fit as rfit;
     use crate::reg_fit::reg_fit::BNDPair;
+    use crate::trade::trade::TradeStats;
 
     // Store the set of pairs most similiar to the
     // master pair.  The matches are listed in most
@@ -70,6 +71,7 @@ pub mod matcher {
         } // loop
     } // fn
 
+   
 
     pub fn get_similar(pairs : &Vec<BNDPair>, mpair : &BNDPair) -> Vec<BNDPair> {
         let look_out = 70;
@@ -139,6 +141,13 @@ pub mod matcher {
         return tout;
     }
 
+    pub fn get_matches(pairs : &Vec<BNDPair>, mpair : &BNDPair)  -> BNDMatch {
+      let sims = get_similar(pairs, mpair);
+      return  BNDMatch {
+          master : mpair.clone(),
+          matches : sims
+        };
+    } // fn
 
     // capture the sims for every element
     // This could run into-excess memory usage 
@@ -147,16 +156,63 @@ pub mod matcher {
     pub fn build_similarity_matrix(pairs : &Vec<BNDPair>) -> Vec<BNDMatch> {
         let mut tout : Vec<BNDMatch> = Vec::new();
         for mpair in pairs {
-            let sims = get_similar(pairs, mpair);
-            let matched : BNDMatch = BNDMatch {
-                master : mpair.clone(),
-                matches : sims
-            };
+            let matched = get_matches(pairs, &mpair);
             tout.push(matched);
         } // for mpair
         tout.sort_by_key(|x| (x.master.short_line.end_ndx));
         return tout;
     } // fn
+
+  
+
+
+    pub fn safe_div(num : f32, divisor : f32, default : f32) -> f32{
+        if divisor == 0.0 {
+            return default;
+        }
+        else {
+            return num / divisor;
+        }
+    }
+
+    pub fn match_stats(bmatch : &BNDMatch) -> TradeStats {
+        let mut win_cnt = 0;
+        let mut loss_cnt= 0;
+        let mut win_tot = 0.0;
+        let mut loss_tot= 0.0;
+        for pair in &bmatch.matches {
+            if pair.fp_dif_rat > 0.0 {
+                win_cnt += 1;
+                win_tot += pair.fp_dif_rat;
+            } else {
+                loss_cnt += 1;
+                loss_tot += pair.fp_dif_rat;
+            } // else
+        } // for pair
+        let tot_cnt  = loss_cnt + win_cnt;
+        let win_avg  = safe_div(win_tot, win_cnt as f32, 0.0);
+        let loss_avg = safe_div(loss_tot, loss_cnt as f32, 0.0);
+        let win_rat  = safe_div(win_cnt as f32, tot_cnt as f32, 0.0);
+        let loss_rat = safe_div(loss_cnt as f32, tot_cnt as f32, 0.0);
+        let win_net  = win_tot + loss_tot;
+        let avg_net  = safe_div(win_net, tot_cnt as f32, 0.0);
+        let appt =   (win_rat * win_avg) - (loss_rat.abs() * loss_avg.abs());
+
+        
+        return TradeStats { 
+            win_tot : win_tot,
+            win_cnt : win_cnt,
+            win_rat : win_rat,
+            win_avg : win_avg,
+            loss_tot : loss_tot,
+            loss_cnt : loss_cnt,
+            loss_rat : loss_rat.abs(),
+            loss_avg : loss_avg.abs(),
+            net_tot  : win_net,
+            net_avg  : avg_net,
+            appt     : appt
+          }
+    }
 
 
      // produce a human friendly columnuar report showing
@@ -171,9 +227,8 @@ pub mod matcher {
             return format!("{label:6} {lslope:7.3}% {llen:5} {loffset:9.3} {lend:7} {sslope:7.3}% {slen:5} {soffset:9.3} {send:7} {angle:11.2} {drat:7.2}% {score:9.4}\n",
                 label = label, lslope=ll.sloper * 100.0,  llen=ll.num_ele, loffset=ll.offset, lend=ll.end_ndx,
                 sslope=sl.sloper * 100.0, slen=sl.num_ele, soffset=sl.offset, send=sl.end_ndx,
-                angle=pair.angle, drat=(pair.fp_dif_rat*100.0), score=pair.score);
-           
-        }
+                angle=pair.angle, drat=(pair.fp_dif_rat*100.0), score=pair.score);           
+        } // fn
 
         for bmatch in dta {
             spc += 1;
@@ -186,39 +241,19 @@ pub mod matcher {
             }
             let s = print_det(&"master".to_string(), &bmatch.master);
             b.append(s);
-            let mut win_cnt = 0;
-            let mut loss_cnt= 0;
-            let mut win_tot = 0.0;
-            let mut loss_tot= 0.0;
             for pair in &bmatch.matches {
                 let s = print_det(&" ..".to_string(), pair);
                 b.append(s);
-                if pair.fp_dif_rat > 0.0 {
-                   win_cnt += 1;
-                   win_tot += pair.fp_dif_rat;
-                } else {
-                   loss_cnt += 1;
-                   loss_tot += pair.fp_dif_rat;
-                }
             } // for pair
-            let tot_cnt  = loss_cnt + win_cnt;
-            let win_avg  = win_tot / (win_cnt as f32);
-            let loss_avg = loss_tot / (loss_cnt as f32);
-            let win_rat  = (win_cnt as f32) / (tot_cnt as f32);
-            let loss_rat = (loss_cnt as f32)/ (tot_cnt as f32);
-            let win_net  = win_tot + loss_tot;
-            let avg_net  = win_net / (tot_cnt as f32);
-            let appt =   (win_rat * win_avg) - (loss_rat.abs() * loss_avg  );
-            b.append(format!("         #win={0:2}  #loss= {1:3} winRat= {2:5.2}% lossRat={3:5.2}% avg_net= {4:5.4}%\n",
-                win_cnt, loss_cnt, (win_rat*100.0), (loss_rat*100.0), (avg_net*100.0)));
+           let ss = match_stats(bmatch);
+           b.append(format!("         #win={0:2}  #loss= {1:3} winRat= {2:5.2}% lossRat={3:5.2}% avg_net= {4:5.4}%\n",
+                ss.win_cnt, ss.loss_cnt, (ss.win_rat*100.0), (ss.loss_rat*100.0), (ss.net_avg*100.0)));
             b.append(format!("         tot_win= {0:7.2}% avg_win= {1:7.3}% net_P&L= {2:5.3}%\n",
-                 win_tot*100.0, win_avg*100.0, win_net*100.0));
-            b.append(format!("         tot_loss= {0:7.2}% avg_loss= {1:7.3}% appt= {2:5.2}% \n",
-                  loss_tot*100.0, loss_avg*100.0, appt*100.0 ));
+                 ss.win_tot*100.0, ss.win_avg*100.0, ss.net_tot*100.0));
+            b.append(format!("         tot_loss= {0:7.2}% avg_loss= {1:7.3}% appt= {2:5.3}% \n",
+                  ss.loss_tot*100.0, ss.loss_avg*100.0, ss.appt*100.0 ));
             //b.append(format!(""))
             b.append("\n");
-        
-
         } // for
         return b.string();
         
